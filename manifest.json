@@ -1,0 +1,21 @@
+{
+  "name": "MIMI Roulette",
+  "short_name": "MIMI Roulette",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#74ebd5",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "src/icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "src/icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

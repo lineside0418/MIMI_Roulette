@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="icon" href="src/icon.png" type="image/png">
+    <title>MIMI Roulette</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#74ebd5">
+    <link rel="apple-touch-icon" href="src/icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600&family=Zen+Kaku+Gothic+New:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <style>
+        /* CSSは変更なしなので省略、前のコードのまま */
+        :root {
+            --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            --glass-bg: rgba(255, 255, 255, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --text-main: #2c3e50;
+            --text-sub: #5f6c7b;
+            --accent: #74ebd5;
+            --accent-grad: linear-gradient(135deg, #9FACE6 0%, #74ebd5 100%);
+            --shadow: 0 15px 35px rgba(0,0,0,0.1);
+            --modal-bg: rgba(255, 255, 255, 0.95);
+            --item-h: 70px;
+        }
+
+        [data-theme="dark"] {
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%);
+            --glass-bg: rgba(20, 25, 40, 0.75);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text-main: #e2e8f0;
+            --text-sub: #94a3b8;
+            --accent: #818cf8;
+            --accent-grad: linear-gradient(135deg, #6366f1 0%, #a5b4fc 100%);
+            --shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+            --modal-bg: rgba(15, 23, 42, 0.95);
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+
+        body {
+            margin: 0; font-family: 'Zen Kaku Gothic New', sans-serif;
+            background: var(--bg-gradient); height: 100vh;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: var(--text-main); 
+            transition: background 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+            overflow: hidden;
+        }
+
+        /* Header */
+        .header {
+            position: absolute; top: 0; left: 0; width: 100%; padding: 25px 30px;
+            display: flex; justify-content: space-between; align-items: center; z-index: 20;
+        }
+        .logo { 
+            font-family: 'Inter', sans-serif; font-weight: 300; 
+            letter-spacing: 0.1em; font-size: 1.1rem; opacity: 0.9; text-transform: uppercase;
+        }
+        .header-controls { display: flex; gap: 16px; }
+
+        .icon-btn {
+            background: transparent; border: 1px solid transparent; border-radius: 50%;
+            width: 44px; height: 44px; 
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer; color: var(--text-main); transition: all 0.3s ease;
+            position: relative;
+        }
+        .icon-btn:hover { background: var(--glass-border); transform: scale(1.1); }
+        
+        .icon-btn .material-icons-round { 
+            font-size: 24px; width: 24px; height: 24px; line-height: 24px; text-align: center;
+            transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transform-origin: center center; display: block;
+        }
+        .icon-btn:hover .material-icons-round { transform: rotate(180deg); }
+
+        /* Container */
+        .container {
+            width: 90%; max-width: 420px; height: 55vh; max-height: 500px;
+            background: var(--glass-bg); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
+            border-radius: 40px; border: 1px solid var(--glass-border);
+            box-shadow: var(--shadow); position: relative;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden;
+            transition: all 0.5s ease;
+        }
+
+        .reel-window {
+            width: 100%; height: 280px; position: relative; overflow: hidden;
+            mask-image: linear-gradient(to bottom, transparent 0%, black 25%, black 75%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 25%, black 75%, transparent 100%);
+        }
+        .reel-list { list-style: none; padding: 0; margin: 0; width: 100%; position: absolute; top: 0; left: 0; }
+        
+        .reel-item {
+            height: var(--item-h); display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem; color: var(--text-sub); font-weight: 400;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 25px;
+            transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), 
+                        color 0.4s ease, 
+                        text-shadow 0.4s ease;
+        }
+        
+        .reel-item.winner-active {
+            color: var(--text-main); font-weight: 700; 
+            transform: scale(1.2);
+            text-shadow: 0 0 25px rgba(116, 235, 213, 0.5);
+        }
+        [data-theme="dark"] .reel-item.winner-active {
+            text-shadow: 0 0 25px rgba(165, 180, 252, 0.6); color: #fff;
+        }
+
+        .selection-frame {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 70%; height: var(--item-h);
+            border-top: 1px solid var(--accent); border-bottom: 1px solid var(--accent);
+            background: linear-gradient(90deg, transparent, rgba(116, 235, 213, 0.05), transparent);
+            pointer-events: none; z-index: 5; opacity: 0.6;
+        }
+
+        .spin-btn {
+            margin-top: 40px; width: 180px; padding: 18px 0; border: none; border-radius: 100px;
+            background: var(--accent-grad); color: #fff;
+            font-family: 'Inter', sans-serif; font-size: 1rem; 
+            font-weight: 300; letter-spacing: 0.25em;
+            cursor: pointer; box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.3s; z-index: 10;
+        }
+        .spin-btn:hover { transform: translateY(-3px) scale(1.03); box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+        .spin-btn:active { transform: scale(0.98); }
+        .spin-btn:disabled { opacity: 0.6; cursor: default; transform: none; box-shadow: none; filter: grayscale(0.4); }
+
+        /* Modals */
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            z-index: 100; display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.4s ease;
+        }
+        .modal.active { opacity: 1; pointer-events: all; }
+        
+        .modal-card {
+            background: var(--modal-bg); width: 88%; max-width: 380px; padding: 45px 35px;
+            border-radius: 36px; border: 1px solid var(--glass-border); text-align: center;
+            box-shadow: 0 30px 60px -15px rgba(0,0,0,0.3);
+            transform: scale(0.9) translateY(20px); transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+            max-height: 85vh; overflow-y: auto; display:flex; flex-direction:column; align-items:center;
+        }
+        .modal.active .modal-card { transform: scale(1) translateY(0); }
+
+        /* Result Typography */
+        .res-singer-badge {
+            background: rgba(127,127,127,0.1); color: var(--text-sub);
+            padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 500;
+            margin-bottom: 15px; border: 1px solid var(--glass-border); font-family: 'Inter';
+        }
+        
+        .res-title-main {
+            font-size: 1.8rem; font-weight: 700; line-height: 1.3;
+            background: linear-gradient(135deg, var(--text-main) 30%, var(--text-sub) 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            margin-bottom: 8px; 
+            word-wrap: break-word; overflow-wrap: break-word; white-space: normal; max-width: 100%;
+            letter-spacing: -0.02em;
+        }
+        .res-title-main.long { font-size: 1.5rem; }
+        .res-title-main.very-long { font-size: 1.25rem; }
+
+        .res-artist-sub { font-size: 1rem; color: var(--text-sub); margin-bottom: 40px; letter-spacing: 0.05em; font-weight: 300; }
+
+        .action-btn {
+            display: flex; justify-content: center; align-items: center; width: 100%; padding: 15px 0;
+            border-radius: 18px; margin-bottom: 12px; text-decoration: none; font-weight: 600; color: #fff;
+            font-size: 0.95rem; border: none; cursor: pointer; transition: transform 0.2s, opacity 0.2s;
+            font-family: 'Inter';
+        }
+        .action-btn:hover { transform: translateY(-2px); opacity: 0.95; }
+        .btn-yt { background: #1a1a1a; } [data-theme="dark"] .btn-yt { background: #e02d2d; }
+        .btn-tw { background: #000; } [data-theme="dark"] .btn-tw { background: #fff; color:#000; }
+        .btn-post { background: var(--accent-grad); margin-top:10px; box-shadow: 0 8px 20px rgba(0,0,0,0.15); }
+
+        .share-area {
+            width: 100%; height: 120px; border-radius: 18px; padding: 18px;
+            border: 1px solid var(--glass-border); background: rgba(255,255,255,0.5);
+            font-family: 'Zen Kaku Gothic New', sans-serif; font-size: 0.95rem; resize: none; margin-bottom: 8px;
+            color: var(--text-main); line-height: 1.5;
+        }
+        [data-theme="dark"] .share-area { background: rgba(0,0,0,0.3); }
+        .share-area:focus { outline: 2px solid var(--accent); border-color: transparent; }
+        .char-count { font-size: 0.8rem; color: var(--text-sub); align-self: flex-end; margin-bottom: 25px; font-family: 'Inter'; }
+        .char-count.error { color: #ef4444; }
+
+        /* Settings UI */
+        .setting-row { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--glass-border); width:100%; }
+        .setting-label { font-size: 1rem; font-weight: 500; }
+        .setting-desc { font-size: 0.8rem; color: var(--text-sub); margin-top: 4px; }
+        
+        .switch { position: relative; display: inline-block; width: 48px; height: 28px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #cbd5e1; border-radius: 34px; transition: .4s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 22px; width: 22px;
+            left: 3px; bottom: 3px; background-color: white; border-radius: 50%; transition: .4s cubic-bezier(0.2, 0.8, 0.2, 1);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        input:checked + .slider { background-color: var(--accent); }
+        input:checked + .slider:before { transform: translateX(20px); }
+        input:disabled + .slider { opacity: 0.5; cursor: not-allowed; }
+
+        .mode-select { display: flex; gap: 10px; margin-top: 10px; width: 100%; }
+        .mode-btn {
+            flex: 1; padding: 10px; border-radius: 12px; border: 1px solid var(--glass-border);
+            background: transparent; color: var(--text-sub); cursor: pointer; transition: 0.2s;
+            font-size: 0.9rem; font-weight: 600;
+        }
+        .mode-btn.active {
+            background: var(--accent); color: #fff; border-color: transparent;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .close-link { margin-top: 20px; text-decoration: underline; cursor: pointer; color: var(--text-sub); font-size: 0.85rem; }
+        .day-badge {
+            position: absolute; top: 80px; background: var(--accent); color: #fff;
+            padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); font-family: 'Inter'; z-index: 15;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="logo">MIMI Roulette</div>
+        <div class="header-controls">
+            <button id="themeToggle" class="icon-btn" title="Theme"><span class="material-icons-round">dark_mode</span></button>
+            <button id="settingsBtn" class="icon-btn" title="Settings"><span class="material-icons-round">settings</span></button>
+        </div>
+    </div>
+
+    <div id="dailyBadge" class="day-badge" style="display:none;">Day 1</div>
+
+    <div class="container">
+        <div class="reel-window">
+            <div class="selection-frame"></div>
+            <ul class="reel-list" id="reelList">
+                <li class="reel-item">Loading...</li>
+            </ul>
+        </div>
+        <button id="spinBtn" class="spin-btn">SPIN</button>
+    </div>
+
+    <div id="resultModal" class="modal">
+        <div class="modal-card">
+            <div id="resSinger" class="res-singer-badge">Singer</div>
+            <div id="resTitle" class="res-title-main">Title</div>
+            <div id="resArtist" class="res-artist-sub">MIMI</div>
+            
+            <a id="btnYt" href="#" target="_blank" class="action-btn btn-yt">
+                <span style="margin-right:8px">▶</span> <span data-i18n="youtube">YouTubeで再生する</span>
+            </a>
+            <button id="btnOpenShare" class="action-btn btn-tw">
+                <span data-i18n="share">Share on X</span>
+            </button>
+            <div onclick="closeModal('resultModal')" class="close-link" data-i18n="close">Close</div>
+        </div>
+    </div>
+
+    <div id="shareModal" class="modal">
+        <div class="modal-card">
+            <h3 style="margin-top:0; color:var(--text-main);" data-i18n="shareTitle">Post to X</h3>
+            <textarea id="shareInput" class="share-area" placeholder=""></textarea>
+            <div id="charCount" class="char-count">140</div>
+            
+            <button id="btnPostX" class="action-btn btn-post" data-i18n="post">Post</button>
+            <div onclick="closeModal('shareModal')" class="close-link" data-i18n="cancel">Cancel</div>
+        </div>
+    </div>
+
+    <div id="resetModal" class="modal">
+        <div class="modal-card">
+            <span class="material-icons-round" style="font-size:48px; color:var(--accent); margin-bottom:15px;">check_circle</span>
+            <div style="font-size:1.2rem; font-weight:700; margin-bottom:10px;" data-i18n="completeTitle">Completed!</div>
+            <div style="font-size:0.9rem; color:var(--text-sub); margin-bottom:20px; line-height:1.6;" data-i18n="completeDesc">
+                全ての曲が出終わりました。<br>リストをリセットしますか？
+            </div>
+            <button id="btnResetConfirm" class="action-btn btn-post" data-i18n="reset">Reset List</button>
+        </div>
+    </div>
+
+    <div id="settingsModal" class="modal">
+        <div class="modal-card" style="text-align: left; align-items:flex-start;">
+            <h3 style="margin:0 auto 20px; color:var(--text-main); font-weight:600;" data-i18n="settings">Settings</h3>
+            
+            <div class="setting-row">
+                <span data-i18n="language">Language</span>
+                <div style="display:flex; align-items:center; gap:8px; font-weight:600; font-size:0.9rem;">
+                    <span id="langLabel" style="color:var(--accent);">JA</span>
+                    <label class="switch">
+                        <input type="checkbox" id="langToggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="setting-row" style="flex-direction:column; align-items:flex-start;">
+                <span data-i18n="mode">Play Mode</span>
+                <div class="mode-select">
+                    <button id="modeNormal" class="mode-btn active" onclick="setMode('normal')">Roulette</button>
+                    <button id="modeDaily" class="mode-btn" onclick="setMode('daily')">Daily</button>
+                </div>
+                <div id="modeDesc" class="setting-desc" style="margin-top:8px;">通常モードです</div>
+            </div>
+
+            <div class="setting-row">
+                <div>
+                    <div data-i18n="noRepeat">No Repeat</div>
+                    <div class="setting-desc" data-i18n="noRepeatDesc">一度出た曲は出ません</div>
+                </div>
+                <label class="switch"><input type="checkbox" id="checkNoRepeat"><span class="slider"></span></label>
+            </div>
+            
+            <div style="margin:20px 0 10px; font-weight:600;" data-i18n="history">History</div>
+            <ul id="historyList" class="history-list" style="width:100%; list-style:none; padding:0; max-height:120px; overflow-y:auto;"><li>Empty</li></ul>
+            <div style="text-align:right; width:100%;"><button class="close-link" style="background:none; border:none;" onclick="clearHistory()" data-i18n="clear">Clear</button></div>
+            
+            <div style="margin-top:20px; width:100%; text-align:center;">
+                <div onclick="closeModal('settingsModal')" class="close-link" data-i18n="close">Close</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Service Worker Registration for PWA ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('SW Registered'))
+                    .catch(err => console.log('SW Fail', err));
+            });
+        }
+
+        // --- Logic ---
+        const I18N = {
+            ja: {
+                youtube: "YouTubeで再生する", share: "Xでシェア", close: "閉じる",
+                shareTitle: "感想を投稿", post: "ポストする", cancel: "キャンセル",
+                completeTitle: "コンプリート！", completeDesc: "全ての曲を聴きました！<br>リストと日数をリセットしますか？",
+                reset: "リセットする", settings: "設定", language: "言語 (JA/EN)",
+                mode: "モード選択", noRepeat: "重複なし", noRepeatDesc: "一度出た曲は出ません",
+                history: "履歴", clear: "履歴削除", empty: "履歴なし",
+                placeholder: "感想を入力...",
+                modeNormalDesc: "ランダムに曲を再生します",
+                modeDailyDesc: "日数を記録し、全曲制覇を目指します"
+            },
+            en: {
+                youtube: "Play on YouTube", share: "Share on X", close: "Close",
+                shareTitle: "Share Thoughts", post: "Post", cancel: "Cancel",
+                completeTitle: "Completed!", completeDesc: "All songs played!<br>Reset list and day counter?",
+                reset: "Reset List", settings: "Settings", language: "Language",
+                mode: "Play Mode", noRepeat: "No Repeat", noRepeatDesc: "Don't play same song twice",
+                history: "History", clear: "Clear History", empty: "No history",
+                placeholder: "Write your thoughts...",
+                modeNormalDesc: "Play songs randomly",
+                modeDailyDesc: "Track days and aim for completion"
+            }
+        };
+
+        let currentLang = localStorage.getItem('mimi_lang') || 'ja';
+        const CONFIG = { itemHeight: 70, spinDuration: 5, loops: 10 };
+        
+        let allSongs = [];
+        let availableSongs = [];
+        let history = JSON.parse(localStorage.getItem('mimi_history')) || [];
+        
+        let currentMode = localStorage.getItem('mimi_mode') || 'normal'; 
+        let dailyCount = parseInt(localStorage.getItem('mimi_daily_count') || '1');
+        let currentWinner = null;
+        let isSpinning = false;
+        
+        const els = {
+            reel: document.getElementById('reelList'),
+            spinBtn: document.getElementById('spinBtn'),
+            themeBtn: document.getElementById('themeToggle'),
+            langToggle: document.getElementById('langToggle'),
+            langLabel: document.getElementById('langLabel'),
+            shareInput: document.getElementById('shareInput'),
+            charCount: document.getElementById('charCount'),
+            noRepeatCheck: document.getElementById('checkNoRepeat'),
+            dailyBadge: document.getElementById('dailyBadge'),
+            modeDesc: document.getElementById('modeDesc')
+        };
+
+        async function init() {
+            try {
+                // Modified Fetch Path for PWA src folder
+                const res = await fetch('src/songs.json');
+                allSongs = await res.json();
+                availableSongs = [...allSongs];
+                
+                renderStaticReel(); 
+                updateHistoryUI();
+                
+                if(localStorage.getItem('theme') === 'dark') applyTheme('dark');
+                applyLang(currentLang);
+                setMode(currentMode); 
+
+            } catch (e) {
+                console.error(e);
+                els.reel.innerHTML = '<li class="reel-item">Error Loading Data</li>';
+            }
+        }
+        init();
+
+        function setMode(mode) {
+            currentMode = mode;
+            localStorage.setItem('mimi_mode', mode);
+            document.getElementById('modeNormal').className = mode === 'normal' ? 'mode-btn active' : 'mode-btn';
+            document.getElementById('modeDaily').className = mode === 'daily' ? 'mode-btn active' : 'mode-btn';
+            
+            if (mode === 'daily') {
+                els.dailyBadge.style.display = 'block';
+                els.dailyBadge.innerText = `Day ${dailyCount}`;
+                els.noRepeatCheck.checked = true;
+                els.noRepeatCheck.disabled = true;
+                els.modeDesc.innerText = I18N[currentLang].modeDailyDesc;
+            } else {
+                els.dailyBadge.style.display = 'none';
+                els.noRepeatCheck.disabled = false;
+                els.modeDesc.innerText = I18N[currentLang].modeNormalDesc;
+            }
+        }
+
+        function renderStaticReel() {
+            els.reel.innerHTML = '';
+            allSongs.forEach(s => els.reel.appendChild(createItem(s.title)));
+            allSongs.forEach(s => els.reel.appendChild(createItem(s.title))); 
+            gsap.set(els.reel, { y: 105 }); 
+        }
+
+        function createItem(text) {
+            const li = document.createElement('li');
+            li.className = 'reel-item';
+            li.innerText = text;
+            return li;
+        }
+
+        els.spinBtn.addEventListener('click', () => {
+            if(isSpinning) return;
+            const isNoRepeat = currentMode === 'daily' || els.noRepeatCheck.checked;
+            let targetList = isNoRepeat ? availableSongs : allSongs;
+
+            if(targetList.length === 0) {
+                document.getElementById('resetModal').classList.add('active');
+                return;
+            }
+
+            const winnerIndex = Math.floor(Math.random() * targetList.length);
+            const winner = targetList[winnerIndex];
+            if(isNoRepeat) availableSongs.splice(winnerIndex, 1);
+
+            startSpin(winner);
+        });
+
+        function startSpin(winner) {
+            isSpinning = true;
+            els.spinBtn.disabled = true;
+            const winnerIndexOriginal = allSongs.findIndex(s => s.title === winner.title);
+            const fragment = document.createDocumentFragment();
+
+            for(let i=0; i < CONFIG.loops; i++) allSongs.forEach(s => fragment.appendChild(createItem(s.title)));
+            allSongs.forEach((s, idx) => {
+                const li = createItem(s.title);
+                if(idx === winnerIndexOriginal) li.id = 'winnerItem';
+                fragment.appendChild(li);
+            });
+            for(let i=0; i<3; i++) allSongs.forEach(s => fragment.appendChild(createItem(s.title)));
+
+            els.reel.innerHTML = '';
+            els.reel.appendChild(fragment);
+            gsap.set(els.reel, { y: 0 });
+
+            const targetY = 105 - ((allSongs.length * CONFIG.loops + winnerIndexOriginal) * CONFIG.itemHeight);
+
+            gsap.to(els.reel, {
+                y: targetY,
+                duration: CONFIG.spinDuration,
+                ease: "power4.out",
+                onComplete: function() {
+                    const winItem = document.getElementById('winnerItem');
+                    if(winItem) winItem.classList.add('winner-active');
+                    setTimeout(() => {
+                        if(currentMode === 'daily') {
+                            dailyCount++;
+                            localStorage.setItem('mimi_daily_count', dailyCount);
+                            els.dailyBadge.innerText = `Day ${dailyCount}`;
+                        }
+                        showResult(winner);
+                    }, 600); 
+                }
+            });
+        }
+
+        function showResult(song) {
+            currentWinner = song;
+            
+            // Font Sizing Logic
+            const titleEl = document.getElementById('resTitle');
+            titleEl.innerText = song.title;
+            titleEl.className = 'res-title-main';
+            if (song.title.length > 20) titleEl.classList.add('very-long');
+            else if (song.title.length > 12) titleEl.classList.add('long');
+            
+            document.getElementById('resSinger').innerText = song.singer;
+            document.getElementById('resArtist').innerText = song.artist;
+            document.getElementById('btnYt').href = song.url;
+            
+            addToHistory(song);
+            document.getElementById('resultModal').classList.add('active');
+            
+            confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 }, colors: ['#74ebd5', '#9FACE6', '#ffffff'] });
+            isSpinning = false;
+            els.spinBtn.disabled = false;
+        }
+
+        document.getElementById('btnOpenShare').addEventListener('click', () => {
+            document.getElementById('resultModal').classList.remove('active');
+            els.shareInput.value = '';
+            els.shareInput.placeholder = I18N[currentLang].placeholder;
+            updateCharCount();
+            document.getElementById('shareModal').classList.add('active');
+            els.shareInput.focus();
+        });
+
+        els.shareInput.addEventListener('input', updateCharCount);
+
+        function updateCharCount() {
+            if(!currentWinner) return;
+            const templateLen = getTemplateLength();
+            const userInputLen = els.shareInput.value.length;
+            const remaining = 140 - (templateLen + userInputLen);
+            els.charCount.innerText = remaining;
+            els.charCount.classList.toggle('error', remaining < 0);
+        }
+
+        function getTemplateLength() {
+            const artistDisplay = `「${currentWinner.artist} (${currentWinner.singer})」`;
+            const titleDisplay = `「${currentWinner.title}」`;
+            let header = currentMode === 'daily' ? `${dailyCount - 1}日目の曲は` : "今回の曲は";
+            const part1 = `${header}\n${titleDisplay} / ${artistDisplay}\nでした！\n\n`;
+            const part2 = `\n\n↓${titleDisplay}\n`;
+            const part3 = ` #MIMI_Roulette`; 
+            return part1.length + part2.length + 23 + part3.length;
+        }
+
+        function generatePostText(userThought) {
+            const artistDisplay = `「${currentWinner.artist} (${currentWinner.singer})」`;
+            const titleDisplay = `「${currentWinner.title}」`;
+            let header = currentMode === 'daily' ? `${dailyCount - 1}日目の曲は` : "今回の曲は";
+            return `${header}\n${titleDisplay} / ${artistDisplay}\nでした！\n\n${userThought}\n\n↓${titleDisplay}\n${currentWinner.url} #MIMI_Roulette`;
+        }
+
+        document.getElementById('btnPostX').addEventListener('click', () => {
+            if(!currentWinner) return;
+            const text = generatePostText(els.shareInput.value);
+            const intent = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+            window.open(intent, '_blank');
+            document.getElementById('shareModal').classList.remove('active');
+        });
+
+        function applyTheme(theme) {
+            const html = document.documentElement;
+            if(theme === 'dark') {
+                html.setAttribute('data-theme', 'dark');
+                els.themeBtn.innerHTML = '<span class="material-icons-round">light_mode</span>';
+                localStorage.setItem('theme', 'dark');
+            } else {
+                html.removeAttribute('data-theme');
+                els.themeBtn.innerHTML = '<span class="material-icons-round">dark_mode</span>';
+                localStorage.setItem('theme', 'light');
+            }
+        }
+        els.themeBtn.addEventListener('click', () => {
+            applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+        });
+
+        function applyLang(lang) {
+            currentLang = lang;
+            localStorage.setItem('mimi_lang', lang);
+            els.langLabel.innerText = lang.toUpperCase();
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if(I18N[lang][key]) el.innerHTML = I18N[lang][key];
+            });
+            els.shareInput.placeholder = I18N[lang].placeholder;
+            setMode(currentMode);
+        }
+        els.langToggle.addEventListener('change', (e) => applyLang(e.target.checked ? 'en' : 'ja'));
+
+        function addToHistory(song) {
+            const date = new Date().toLocaleDateString();
+            history.unshift({ title: song.title, date: date });
+            if(history.length > 50) history.pop();
+            localStorage.setItem('mimi_history', JSON.stringify(history));
+            updateHistoryUI();
+        }
+        function updateHistoryUI() {
+            const list = document.getElementById('historyList');
+            list.innerHTML = '';
+            if(history.length === 0) { list.innerHTML = `<li style="padding:10px; color:var(--text-sub);">${I18N[currentLang].empty}</li>`; return; }
+            history.forEach(h => {
+                const li = document.createElement('li');
+                li.style.borderBottom = "1px dashed var(--glass-border)";
+                li.style.padding = "8px 0";
+                li.style.display = "flex"; li.style.justifyContent = "space-between";
+                li.style.fontSize = "0.9rem"; li.style.color = "var(--text-sub)";
+                li.innerHTML = `<span>${h.title}</span><span style="opacity:0.7;">${h.date}</span>`;
+                list.appendChild(li);
+            });
+        }
+        window.clearHistory = () => { history = []; localStorage.removeItem('mimi_history'); updateHistoryUI(); };
+        window.closeModal = (id) => document.getElementById(id).classList.remove('active');
+        document.getElementById('settingsBtn').addEventListener('click', () => document.getElementById('settingsModal').classList.add('active'));
+
+        document.getElementById('btnResetConfirm').addEventListener('click', () => {
+            availableSongs = [...allSongs];
+            if(currentMode === 'daily') {
+                dailyCount = 1;
+                localStorage.setItem('mimi_daily_count', 1);
+                els.dailyBadge.innerText = `Day 1`;
+            }
+            document.getElementById('resetModal').classList.remove('active');
+            confetti({ particleCount: 50, colors:['#74ebd5'] });
+        });
+
+    </script>
+</body>
+</html>
