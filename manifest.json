@@ -1,6 +1,6 @@
 {
   "name": "MIMI Roulette",
-  "short_name": "MIMI",
+  "short_name": "MIMI Roulette",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#f5f7fa",
