@@ -2,12 +2,12 @@
 <html lang="ja" data-theme="light">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <link rel="icon" href="src/icon.png" type="image/png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>MIMI Roulette</title>
     
+    <link rel="icon" type="image/png" href="src/icon.png">
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#74ebd5">
+    <meta name="theme-color" content="#f5f7fa" id="metaThemeColor">
     <link rel="apple-touch-icon" href="src/icon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -16,14 +16,16 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600&family=Zen+Kaku+Gothic+New:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     
     <style>
-        /* CSSは変更なしなので省略、前のコードのまま */
         :root {
-            --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            --bg-start: #f5f7fa;
+            --bg-end: #c3cfe2;
+            --bg-gradient: linear-gradient(135deg, var(--bg-start) 0%, var(--bg-end) 100%);
             --glass-bg: rgba(255, 255, 255, 0.65);
             --glass-border: rgba(255, 255, 255, 0.4);
             --text-main: #2c3e50;
@@ -33,10 +35,15 @@
             --shadow: 0 15px 35px rgba(0,0,0,0.1);
             --modal-bg: rgba(255, 255, 255, 0.95);
             --item-h: 70px;
+            /* Visibility improvement colors */
+            --input-border: rgba(0, 0, 0, 0.15); 
+            --input-bg: rgba(255, 255, 255, 0.8);
         }
 
         [data-theme="dark"] {
-            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%);
+            --bg-start: #0f172a;
+            --bg-end: #312e81;
+            --bg-gradient: linear-gradient(135deg, var(--bg-start) 0%, #1e1b4b 50%, var(--bg-end) 100%);
             --glass-bg: rgba(20, 25, 40, 0.75);
             --glass-border: rgba(255, 255, 255, 0.08);
             --text-main: #e2e8f0;
@@ -45,6 +52,8 @@
             --accent-grad: linear-gradient(135deg, #6366f1 0%, #a5b4fc 100%);
             --shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
             --modal-bg: rgba(15, 23, 42, 0.95);
+            --input-border: rgba(255, 255, 255, 0.1);
+            --input-bg: rgba(0, 0, 0, 0.3);
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
@@ -56,18 +65,20 @@
             color: var(--text-main); 
             transition: background 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
             overflow: hidden;
+            padding-top: env(safe-area-inset-top); 
+            padding-bottom: env(safe-area-inset-bottom);
         }
 
-        /* Header */
         .header {
-            position: absolute; top: 0; left: 0; width: 100%; padding: 25px 30px;
+            position: absolute; top: 0; left: 0; width: 100%; 
+            padding: calc(20px + env(safe-area-inset-top)) 30px 20px;
             display: flex; justify-content: space-between; align-items: center; z-index: 20;
         }
         .logo { 
             font-family: 'Inter', sans-serif; font-weight: 300; 
             letter-spacing: 0.1em; font-size: 1.1rem; opacity: 0.9; text-transform: uppercase;
         }
-        .header-controls { display: flex; gap: 16px; }
+        .header-controls { display: flex; gap: 12px; }
 
         .icon-btn {
             background: transparent; border: 1px solid transparent; border-radius: 50%;
@@ -77,15 +88,21 @@
             position: relative;
         }
         .icon-btn:hover { background: var(--glass-border); transform: scale(1.1); }
-        
         .icon-btn .material-icons-round { 
-            font-size: 24px; width: 24px; height: 24px; line-height: 24px; text-align: center;
-            transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-            transform-origin: center center; display: block;
+            font-size: 24px; transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
-        .icon-btn:hover .material-icons-round { transform: rotate(180deg); }
+        .icon-btn:hover .material-icons-round { transform: rotate(15deg); }
 
-        /* Container */
+        .info-btn {
+            position: fixed; bottom: max(20px, env(safe-area-inset-bottom)); right: 20px;
+            width: 40px; height: 40px; border-radius: 50%;
+            background: var(--glass-bg); border: 1px solid var(--glass-border);
+            color: var(--text-sub); display: flex; justify-content: center; align-items: center;
+            cursor: pointer; opacity: 0.6; transition: 0.3s; z-index: 50;
+            backdrop-filter: blur(5px);
+        }
+        .info-btn:hover { opacity: 1; transform: scale(1.1); background: var(--glass-border); }
+
         .container {
             width: 90%; max-width: 420px; height: 55vh; max-height: 500px;
             background: var(--glass-bg); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
@@ -106,14 +123,10 @@
             height: var(--item-h); display: flex; align-items: center; justify-content: center;
             font-size: 1.1rem; color: var(--text-sub); font-weight: 400;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 25px;
-            transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), 
-                        color 0.4s ease, 
-                        text-shadow 0.4s ease;
+            transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.4s ease, text-shadow 0.4s ease;
         }
-        
         .reel-item.winner-active {
-            color: var(--text-main); font-weight: 700; 
-            transform: scale(1.2);
+            color: var(--text-main); font-weight: 700; transform: scale(1.2);
             text-shadow: 0 0 25px rgba(116, 235, 213, 0.5);
         }
         [data-theme="dark"] .reel-item.winner-active {
@@ -140,12 +153,12 @@
         .spin-btn:active { transform: scale(0.98); }
         .spin-btn:disabled { opacity: 0.6; cursor: default; transform: none; box-shadow: none; filter: grayscale(0.4); }
 
-        /* Modals */
         .modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.4); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
             z-index: 100; display: flex; justify-content: center; align-items: center;
             opacity: 0; pointer-events: none; transition: opacity 0.4s ease;
+            padding-top: env(safe-area-inset-top);
         }
         .modal.active { opacity: 1; pointer-events: all; }
         
@@ -155,16 +168,15 @@
             box-shadow: 0 30px 60px -15px rgba(0,0,0,0.3);
             transform: scale(0.9) translateY(20px); transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
             max-height: 85vh; overflow-y: auto; display:flex; flex-direction:column; align-items:center;
+            scrollbar-width: thin; scrollbar-color: var(--accent) transparent;
         }
         .modal.active .modal-card { transform: scale(1) translateY(0); }
 
-        /* Result Typography */
         .res-singer-badge {
             background: rgba(127,127,127,0.1); color: var(--text-sub);
             padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 500;
             margin-bottom: 15px; border: 1px solid var(--glass-border); font-family: 'Inter';
         }
-        
         .res-title-main {
             font-size: 1.8rem; font-weight: 700; line-height: 1.3;
             background: linear-gradient(135deg, var(--text-main) 30%, var(--text-sub) 100%);
@@ -175,7 +187,6 @@
         }
         .res-title-main.long { font-size: 1.5rem; }
         .res-title-main.very-long { font-size: 1.25rem; }
-
         .res-artist-sub { font-size: 1rem; color: var(--text-sub); margin-bottom: 40px; letter-spacing: 0.05em; font-weight: 300; }
 
         .action-btn {
@@ -191,16 +202,14 @@
 
         .share-area {
             width: 100%; height: 120px; border-radius: 18px; padding: 18px;
-            border: 1px solid var(--glass-border); background: rgba(255,255,255,0.5);
+            border: 1px solid var(--glass-border); background: var(--input-bg);
             font-family: 'Zen Kaku Gothic New', sans-serif; font-size: 0.95rem; resize: none; margin-bottom: 8px;
             color: var(--text-main); line-height: 1.5;
         }
-        [data-theme="dark"] .share-area { background: rgba(0,0,0,0.3); }
         .share-area:focus { outline: 2px solid var(--accent); border-color: transparent; }
         .char-count { font-size: 0.8rem; color: var(--text-sub); align-self: flex-end; margin-bottom: 25px; font-family: 'Inter'; }
         .char-count.error { color: #ef4444; }
 
-        /* Settings UI */
         .setting-row { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--glass-border); width:100%; }
         .setting-label { font-size: 1rem; font-weight: 500; }
         .setting-desc { font-size: 0.8rem; color: var(--text-sub); margin-top: 4px; }
@@ -233,10 +242,58 @@
 
         .close-link { margin-top: 20px; text-decoration: underline; cursor: pointer; color: var(--text-sub); font-size: 0.85rem; }
         .day-badge {
-            position: absolute; top: 80px; background: var(--accent); color: #fff;
+            position: absolute; top: calc(80px + env(safe-area-inset-top)); 
+            background: var(--accent); color: #fff;
             padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1); font-family: 'Inter'; z-index: 15;
         }
+
+        .search-box {
+            width: 100%; padding: 12px 15px; border-radius: 15px; 
+            border: 1px solid var(--input-border); /* Fix visibility */
+            background: var(--input-bg); 
+            color: var(--text-main); margin-bottom: 15px;
+            font-family: inherit; font-size: 0.95rem;
+        }
+        .song-list-scroll { width: 100%; flex: 1; overflow-y: auto; max-height: 400px; padding-right: 5px; }
+        .song-toggle-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--glass-border); }
+        .song-info { display: flex; flex-direction: column; text-align: left; max-width: 80%; }
+        .song-title-sm { font-weight: 600; font-size: 0.95rem; }
+        .song-singer-sm { font-size: 0.8rem; color: var(--text-sub); }
+        
+        .list-controls { display: flex; gap: 10px; margin-bottom: 10px; width: 100%; }
+        .btn-mini { 
+            flex: 1; padding: 8px; border-radius: 10px; 
+            border: 1px solid var(--input-border); /* Fix visibility */
+            background: var(--input-bg);
+            color: var(--text-main); font-size: 0.8rem; cursor: pointer;
+        }
+        .daily-input { 
+            width: 60px; padding: 5px; border-radius: 8px; border: 1px solid var(--input-border); 
+            text-align: center; background: var(--input-bg); color: var(--text-main); font-weight: 600; 
+        }
+
+        .stat-group { width: 100%; margin-bottom: 20px; text-align: left; }
+        .stat-label { font-size: 0.9rem; color: var(--text-sub); margin-bottom: 5px; font-weight: 500; }
+        .stat-value { font-size: 1.5rem; font-weight: 700; color: var(--text-main); }
+        .stat-bar-container { width: 100%; margin-bottom: 10px; }
+        .stat-bar-label { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 4px; color: var(--text-main); }
+        .stat-bar-bg { width: 100%; height: 10px; background: rgba(127,127,127,0.1); border-radius: 5px; overflow: hidden; }
+        .stat-bar-fill { height: 100%; background: var(--accent-grad); border-radius: 5px; transition: width 1s cubic-bezier(0.19, 1, 0.22, 1); }
+
+        .info-link-row { display: flex; flex-direction: column; gap: 15px; width: 100%; margin-bottom: 20px; }
+        .info-link {
+            display: flex; align-items: center; gap: 15px; text-decoration: none; color: var(--text-main);
+            padding: 15px; border-radius: 16px; border: 1px solid var(--glass-border); transition: 0.2s;
+            justify-content: center; /* Centered content */
+            text-align: center;
+        }
+        .info-link:hover { background: rgba(127,127,127,0.05); transform: translateY(-2px); }
+        .info-link i, .info-link .material-icons-round { font-size: 24px; color: var(--accent); }
+        .info-text { font-size: 1rem; font-weight: 600; }
+        .info-sub { font-size: 0.8rem; color: var(--text-sub); }
+        .license-text { font-size: 0.75rem; color: var(--text-sub); text-align: center; line-height: 1.6; margin-top: 10px; }
+
     </style>
 </head>
 <body>
@@ -244,10 +301,13 @@
     <div class="header">
         <div class="logo">MIMI Roulette</div>
         <div class="header-controls">
+            <button id="songsBtn" class="icon-btn" title="Songs"><span class="material-icons-round">queue_music</span></button>
             <button id="themeToggle" class="icon-btn" title="Theme"><span class="material-icons-round">dark_mode</span></button>
             <button id="settingsBtn" class="icon-btn" title="Settings"><span class="material-icons-round">settings</span></button>
         </div>
     </div>
+
+    <button id="infoBtn" class="info-btn" title="Information"><span class="material-icons-round">info</span></button>
 
     <div id="dailyBadge" class="day-badge" style="display:none;">Day 1</div>
 
@@ -266,13 +326,10 @@
             <div id="resSinger" class="res-singer-badge">Singer</div>
             <div id="resTitle" class="res-title-main">Title</div>
             <div id="resArtist" class="res-artist-sub">MIMI</div>
-            
             <a id="btnYt" href="#" target="_blank" class="action-btn btn-yt">
-                <span style="margin-right:8px">▶</span> <span data-i18n="youtube">YouTubeで再生する</span>
+                <span style="margin-right:8px">▶</span> <span data-i18n="youtube">Play on YouTube</span>
             </a>
-            <button id="btnOpenShare" class="action-btn btn-tw">
-                <span data-i18n="share">Share on X</span>
-            </button>
+            <button id="btnOpenShare" class="action-btn btn-tw"><span data-i18n="share">Share on X</span></button>
             <div onclick="closeModal('resultModal')" class="close-link" data-i18n="close">Close</div>
         </div>
     </div>
@@ -282,9 +339,71 @@
             <h3 style="margin-top:0; color:var(--text-main);" data-i18n="shareTitle">Post to X</h3>
             <textarea id="shareInput" class="share-area" placeholder=""></textarea>
             <div id="charCount" class="char-count">140</div>
-            
             <button id="btnPostX" class="action-btn btn-post" data-i18n="post">Post</button>
             <div onclick="closeModal('shareModal')" class="close-link" data-i18n="cancel">Cancel</div>
+        </div>
+    </div>
+
+    <div id="songListModal" class="modal">
+        <div class="modal-card" style="max-height: 80vh; width: 92%;">
+            <h3 style="margin:0 auto 15px; color:var(--text-main);" data-i18n="manageSongs">Songs</h3>
+            <input type="text" id="songSearch" class="search-box" placeholder="Search..." oninput="renderSongList()">
+            <div class="list-controls">
+                <button class="btn-mini" onclick="toggleAllSongs(true)" data-i18n="selectAll">All On</button>
+                <button class="btn-mini" onclick="toggleAllSongs(false)" data-i18n="deselectAll">All Off</button>
+            </div>
+            <div id="songListContainer" class="song-list-scroll"></div>
+            <div onclick="closeModal('songListModal')" class="close-link" data-i18n="close">Close</div>
+        </div>
+    </div>
+
+    <div id="infoModal" class="modal">
+        <div class="modal-card">
+            <h3 style="margin:0 auto 25px; color:var(--text-main);" data-i18n="infoTitle">Information</h3>
+            <div class="info-link-row">
+                <a href="https://x.com/lineside0418" target="_blank" class="info-link">
+                    <i class="fa-brands fa-x-twitter"></i>
+                    <div>
+                        <div class="info-text">@lineside0418</div>
+                        <div class="info-sub" data-i18n="developer">Developer</div>
+                    </div>
+                </a>
+                <a href="https://github.com/lineside0418/MIMI_Roulette" target="_blank" class="info-link">
+                    <i class="fa-brands fa-github"></i>
+                    <div>
+                        <div class="info-text">MIMI Roulette</div>
+                        <div class="info-sub" data-i18n="source">Source Code & Stars</div>
+                    </div>
+                </a>
+                <a href="https://youtube.com/@mimi...official?si=JqEQWSUqPltUO2fT" target="_blank" class="info-link">
+                    <i class="fa-brands fa-youtube"></i>
+                    <div>
+                        <div class="info-text">MIMI</div>
+                        <div class="info-sub" data-i18n="officialCh">Official Channel</div>
+                    </div>
+                </a>
+            </div>
+            <div class="license-text">
+                <span data-i18n="version">Version</span> 1.2.5<br>
+                <span data-i18n="license">This project is licensed under the MIT License.</span><br>
+                Music and Art rights belong to MIMI and respective artists.
+            </div>
+            <div onclick="closeModal('infoModal')" class="close-link" data-i18n="close">Close</div>
+        </div>
+    </div>
+
+    <div id="statsModal" class="modal">
+        <div class="modal-card" style="align-items: flex-start;">
+            <h3 style="margin:0 auto 20px; color:var(--text-main);" data-i18n="statsTitle">Statistics</h3>
+            <div class="stat-group">
+                <div class="stat-label" data-i18n="totalSpins">Total Spins</div>
+                <div class="stat-value" id="statTotal">0</div>
+            </div>
+            <div class="stat-group">
+                <div class="stat-label" data-i18n="topSongs">Top 5 Songs</div>
+                <div id="statTopList" style="width:100%;"></div>
+            </div>
+            <div onclick="closeModal('statsModal')" class="close-link" style="width:100%; text-align:center;" data-i18n="close">Close</div>
         </div>
     </div>
 
@@ -293,7 +412,7 @@
             <span class="material-icons-round" style="font-size:48px; color:var(--accent); margin-bottom:15px;">check_circle</span>
             <div style="font-size:1.2rem; font-weight:700; margin-bottom:10px;" data-i18n="completeTitle">Completed!</div>
             <div style="font-size:0.9rem; color:var(--text-sub); margin-bottom:20px; line-height:1.6;" data-i18n="completeDesc">
-                全ての曲が出終わりました。<br>リストをリセットしますか？
+                All songs played. Reset list?
             </div>
             <button id="btnResetConfirm" class="action-btn btn-post" data-i18n="reset">Reset List</button>
         </div>
@@ -307,11 +426,21 @@
                 <span data-i18n="language">Language</span>
                 <div style="display:flex; align-items:center; gap:8px; font-weight:600; font-size:0.9rem;">
                     <span id="langLabel" style="color:var(--accent);">JA</span>
-                    <label class="switch">
-                        <input type="checkbox" id="langToggle">
-                        <span class="slider"></span>
-                    </label>
+                    <label class="switch"><input type="checkbox" id="langToggle"><span class="slider"></span></label>
                 </div>
+            </div>
+
+            <div class="setting-row">
+                <div>
+                    <div>Haptics</div>
+                    <div class="setting-desc" data-i18n="hapticsDesc">Vibration feedback</div>
+                </div>
+                <label class="switch"><input type="checkbox" id="checkHaptics"><span class="slider"></span></label>
+            </div>
+
+            <div class="setting-row" onclick="openStats()" style="cursor:pointer;">
+                <span style="font-weight:600;" data-i18n="statsLink">Statistics</span>
+                <span class="material-icons-round" style="color:var(--text-sub);">bar_chart</span>
             </div>
 
             <div class="setting-row" style="flex-direction:column; align-items:flex-start;">
@@ -320,15 +449,25 @@
                     <button id="modeNormal" class="mode-btn active" onclick="setMode('normal')">Roulette</button>
                     <button id="modeDaily" class="mode-btn" onclick="setMode('daily')">Daily</button>
                 </div>
-                <div id="modeDesc" class="setting-desc" style="margin-top:8px;">通常モードです</div>
+                <div id="dailyControl" style="display:none; width:100%; margin-top:10px; justify-content:space-between; align-items:center;">
+                    <span style="font-size:0.9rem; color:var(--text-sub);" data-i18n="dayCount">Day Count:</span>
+                    <input type="number" id="dailyInput" class="daily-input" value="1" min="1">
+                </div>
+                <div id="modeDesc" class="setting-desc" style="margin-top:8px;"></div>
             </div>
 
             <div class="setting-row">
-                <div>
-                    <div data-i18n="noRepeat">No Repeat</div>
-                    <div class="setting-desc" data-i18n="noRepeatDesc">一度出た曲は出ません</div>
-                </div>
+                <div><div data-i18n="noRepeat">No Repeat</div><div class="setting-desc" data-i18n="noRepeatDesc">一度出た曲は出ません</div></div>
                 <label class="switch"><input type="checkbox" id="checkNoRepeat"><span class="slider"></span></label>
+            </div>
+
+            <div class="setting-row">
+                <span data-i18n="data">Data</span>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn-mini" onclick="exportData()" data-i18n="export">Export</button>
+                    <button class="btn-mini" onclick="document.getElementById('importFile').click()" data-i18n="import">Import</button>
+                    <input type="file" id="importFile" style="display:none" accept=".json" onchange="importData(this)">
+                </div>
             </div>
             
             <div style="margin:20px 0 10px; font-weight:600;" data-i18n="history">History</div>
@@ -342,16 +481,10 @@
     </div>
 
     <script>
-        // --- Service Worker Registration for PWA ---
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
-                    .then(reg => console.log('SW Registered'))
-                    .catch(err => console.log('SW Fail', err));
-            });
-        }
+        // --- Service Worker ---
+        if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');
 
-        // --- Logic ---
+        // --- Localization ---
         const I18N = {
             ja: {
                 youtube: "YouTubeで再生する", share: "Xでシェア", close: "閉じる",
@@ -359,10 +492,14 @@
                 completeTitle: "コンプリート！", completeDesc: "全ての曲を聴きました！<br>リストと日数をリセットしますか？",
                 reset: "リセットする", settings: "設定", language: "言語 (JA/EN)",
                 mode: "モード選択", noRepeat: "重複なし", noRepeatDesc: "一度出た曲は出ません",
-                history: "履歴", clear: "履歴削除", empty: "履歴なし",
-                placeholder: "感想を入力...",
-                modeNormalDesc: "ランダムに曲を再生します",
-                modeDailyDesc: "日数を記録し、全曲制覇を目指します"
+                history: "履歴", clear: "履歴削除", empty: "履歴なし", placeholder: "感想を入力...",
+                modeNormalDesc: "ランダムに曲を再生します", modeDailyDesc: "日数を記録し、全曲制覇を目指します",
+                manageSongs: "曲の管理", selectAll: "全選択", deselectAll: "全解除", data: "データ",
+                hapticsDesc: "振動フィードバック", statsLink: "統計", statsTitle: "統計データ",
+                totalSpins: "総再生回数", topSongs: "トップ5",
+                infoTitle: "インフォメーション", developer: "開発者", source: "ソースコード",
+                officialCh: "公式チャンネル", version: "バージョン", license: "このプロジェクトはMITライセンスの下で公開されています。",
+                dayCount: "日数:", export: "保存", import: "読込"
             },
             en: {
                 youtube: "Play on YouTube", share: "Share on X", close: "Close",
@@ -370,22 +507,30 @@
                 completeTitle: "Completed!", completeDesc: "All songs played!<br>Reset list and day counter?",
                 reset: "Reset List", settings: "Settings", language: "Language",
                 mode: "Play Mode", noRepeat: "No Repeat", noRepeatDesc: "Don't play same song twice",
-                history: "History", clear: "Clear History", empty: "No history",
-                placeholder: "Write your thoughts...",
-                modeNormalDesc: "Play songs randomly",
-                modeDailyDesc: "Track days and aim for completion"
+                history: "History", clear: "Clear History", empty: "No history", placeholder: "Write your thoughts...",
+                modeNormalDesc: "Play songs randomly", modeDailyDesc: "Track days and aim for completion",
+                manageSongs: "Manage Songs", selectAll: "All On", deselectAll: "All Off", data: "Data",
+                hapticsDesc: "Vibration feedback", statsLink: "Statistics", statsTitle: "Statistics",
+                totalSpins: "Total Spins", topSongs: "Top 5 Songs",
+                infoTitle: "Information", developer: "Developer", source: "Source Code",
+                officialCh: "Official Channel", version: "Version", license: "This project is licensed under the MIT License.",
+                dayCount: "Day:", export: "Export", import: "Import"
             }
         };
 
         let currentLang = localStorage.getItem('mimi_lang') || 'ja';
         const CONFIG = { itemHeight: 70, spinDuration: 5, loops: 10 };
         
+        // --- State ---
         let allSongs = [];
         let availableSongs = [];
         let history = JSON.parse(localStorage.getItem('mimi_history')) || [];
+        let disabledSongs = JSON.parse(localStorage.getItem('mimi_disabled') || '[]');
         
         let currentMode = localStorage.getItem('mimi_mode') || 'normal'; 
         let dailyCount = parseInt(localStorage.getItem('mimi_daily_count') || '1');
+        let hapticsEnabled = (localStorage.getItem('mimi_haptics') !== 'false'); // Default ON
+
         let currentWinner = null;
         let isSpinning = false;
         
@@ -399,22 +544,36 @@
             charCount: document.getElementById('charCount'),
             noRepeatCheck: document.getElementById('checkNoRepeat'),
             dailyBadge: document.getElementById('dailyBadge'),
-            modeDesc: document.getElementById('modeDesc')
+            modeDesc: document.getElementById('modeDesc'),
+            dailyControl: document.getElementById('dailyControl'),
+            dailyInput: document.getElementById('dailyInput'),
+            songListContainer: document.getElementById('songListContainer'),
+            songSearch: document.getElementById('songSearch'),
+            hapticsCheck: document.getElementById('checkHaptics')
         };
 
+        // --- Init ---
         async function init() {
             try {
-                // Modified Fetch Path for PWA src folder
+                // Ensure Settings Loaded First
+                if(localStorage.getItem('theme') === 'dark') applyTheme('dark');
+                
+                // Initialize UI State from LocalStorage
+                els.langToggle.checked = (currentLang === 'en');
+                els.hapticsCheck.checked = hapticsEnabled;
+                els.noRepeatCheck.checked = (localStorage.getItem('mimi_norepeat') === 'true'); // Persist NoRepeat check too
+                
+                // Load Data
                 const res = await fetch('src/songs.json');
                 allSongs = await res.json();
-                availableSongs = [...allSongs];
                 
-                renderStaticReel(); 
-                updateHistoryUI();
-                
-                if(localStorage.getItem('theme') === 'dark') applyTheme('dark');
+                // Apply Mode & Lang (Text Rendering)
                 applyLang(currentLang);
                 setMode(currentMode); 
+                
+                // Render Reel
+                renderStaticReel(); 
+                updateHistoryUI();
 
             } catch (e) {
                 console.error(e);
@@ -423,86 +582,118 @@
         }
         init();
 
-        function setMode(mode) {
-            currentMode = mode;
-            localStorage.setItem('mimi_mode', mode);
-            document.getElementById('modeNormal').className = mode === 'normal' ? 'mode-btn active' : 'mode-btn';
-            document.getElementById('modeDaily').className = mode === 'daily' ? 'mode-btn active' : 'mode-btn';
-            
-            if (mode === 'daily') {
-                els.dailyBadge.style.display = 'block';
-                els.dailyBadge.innerText = `Day ${dailyCount}`;
-                els.noRepeatCheck.checked = true;
-                els.noRepeatCheck.disabled = true;
-                els.modeDesc.innerText = I18N[currentLang].modeDailyDesc;
-            } else {
-                els.dailyBadge.style.display = 'none';
-                els.noRepeatCheck.disabled = false;
-                els.modeDesc.innerText = I18N[currentLang].modeNormalDesc;
-            }
+        // --- Haptics ---
+        function triggerHaptic(ms = 10) {
+            if(hapticsEnabled && navigator.vibrate) navigator.vibrate(ms);
         }
+        els.hapticsCheck.addEventListener('change', (e) => {
+            hapticsEnabled = e.target.checked;
+            localStorage.setItem('mimi_haptics', hapticsEnabled);
+            if(hapticsEnabled) triggerHaptic(50);
+        });
 
-        function renderStaticReel() {
-            els.reel.innerHTML = '';
-            allSongs.forEach(s => els.reel.appendChild(createItem(s.title)));
-            allSongs.forEach(s => els.reel.appendChild(createItem(s.title))); 
-            gsap.set(els.reel, { y: 105 }); 
+        // --- Song Management ---
+        function getActiveSongs() {
+            return allSongs.filter(s => !disabledSongs.includes(s.url));
         }
-
-        function createItem(text) {
-            const li = document.createElement('li');
-            li.className = 'reel-item';
-            li.innerText = text;
-            return li;
+        function renderSongList() {
+            const query = els.songSearch.value.toLowerCase();
+            const list = els.songListContainer;
+            list.innerHTML = '';
+            allSongs.forEach((song) => {
+                if(song.title.toLowerCase().includes(query) || song.singer.toLowerCase().includes(query)) {
+                    const isEnabled = !disabledSongs.includes(song.url);
+                    const div = document.createElement('div');
+                    div.className = 'song-toggle-row';
+                    div.innerHTML = `
+                        <div class="song-info">
+                            <span class="song-title-sm">${song.title}</span>
+                            <span class="song-singer-sm">${song.singer}</span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" ${isEnabled ? 'checked' : ''} onchange="toggleSong('${song.url}')">
+                            <span class="slider"></span>
+                        </label>
+                    `;
+                    list.appendChild(div);
+                }
+            });
         }
+        window.toggleSong = (url) => {
+            if(disabledSongs.includes(url)) disabledSongs = disabledSongs.filter(u => u !== url);
+            else disabledSongs.push(url);
+            localStorage.setItem('mimi_disabled', JSON.stringify(disabledSongs));
+        };
+        window.toggleAllSongs = (enable) => {
+            disabledSongs = enable ? [] : allSongs.map(s => s.url);
+            localStorage.setItem('mimi_disabled', JSON.stringify(disabledSongs));
+            renderSongList();
+        };
+        document.getElementById('songsBtn').addEventListener('click', () => {
+            renderSongList();
+            document.getElementById('songListModal').classList.add('active');
+        });
 
+        // --- Roulette Logic ---
         els.spinBtn.addEventListener('click', () => {
             if(isSpinning) return;
+            const activePool = getActiveSongs();
+            if(activePool.length === 0) { alert("No active songs!"); return; }
+
             const isNoRepeat = currentMode === 'daily' || els.noRepeatCheck.checked;
-            let targetList = isNoRepeat ? availableSongs : allSongs;
+            availableSongs = availableSongs.filter(s => !disabledSongs.includes(s.url));
+            let targetList = isNoRepeat ? availableSongs.filter(s => !disabledSongs.includes(s.url)) : activePool;
 
             if(targetList.length === 0) {
-                document.getElementById('resetModal').classList.add('active');
-                return;
+                 if(activePool.length > 0) document.getElementById('resetModal').classList.add('active');
+                 return;
             }
 
             const winnerIndex = Math.floor(Math.random() * targetList.length);
             const winner = targetList[winnerIndex];
-            if(isNoRepeat) availableSongs.splice(winnerIndex, 1);
+            if(isNoRepeat) availableSongs = availableSongs.filter(s => s.url !== winner.url);
 
-            startSpin(winner);
+            startSpin(winner, activePool);
         });
 
-        function startSpin(winner) {
+        function startSpin(winner, pool) {
             isSpinning = true;
             els.spinBtn.disabled = true;
-            const winnerIndexOriginal = allSongs.findIndex(s => s.title === winner.title);
             const fragment = document.createDocumentFragment();
-
-            for(let i=0; i < CONFIG.loops; i++) allSongs.forEach(s => fragment.appendChild(createItem(s.title)));
-            allSongs.forEach((s, idx) => {
-                const li = createItem(s.title);
-                if(idx === winnerIndexOriginal) li.id = 'winnerItem';
-                fragment.appendChild(li);
-            });
-            for(let i=0; i<3; i++) allSongs.forEach(s => fragment.appendChild(createItem(s.title)));
+            
+            for(let i=0; i < CONFIG.loops; i++) pool.forEach(s => fragment.appendChild(createItem(s.title)));
+            const winnerItem = createItem(winner.title);
+            winnerItem.id = 'winnerItem';
+            fragment.appendChild(winnerItem);
+            for(let i=0; i<3; i++) pool.forEach(s => fragment.appendChild(createItem(s.title)));
 
             els.reel.innerHTML = '';
             els.reel.appendChild(fragment);
             gsap.set(els.reel, { y: 0 });
 
-            const targetY = 105 - ((allSongs.length * CONFIG.loops + winnerIndexOriginal) * CONFIG.itemHeight);
+            const targetIndex = (pool.length * CONFIG.loops); 
+            const targetY = 105 - (targetIndex * CONFIG.itemHeight);
+            let lastHaptic = 0;
 
             gsap.to(els.reel, {
                 y: targetY,
                 duration: CONFIG.spinDuration,
                 ease: "power4.out",
+                onUpdate: function() {
+                    const now = Date.now();
+                    if(now - lastHaptic > 120 && this.ratio < 0.95) {
+                        triggerHaptic(8);
+                        lastHaptic = now;
+                    }
+                },
                 onComplete: function() {
                     const winItem = document.getElementById('winnerItem');
                     if(winItem) winItem.classList.add('winner-active');
+                    triggerHaptic(50); 
                     setTimeout(() => {
                         if(currentMode === 'daily') {
                             dailyCount++;
+                            els.dailyInput.value = dailyCount;
                             localStorage.setItem('mimi_daily_count', dailyCount);
                             els.dailyBadge.innerText = `Day ${dailyCount}`;
                         }
@@ -511,29 +702,67 @@
                 }
             });
         }
+        function createItem(text) {
+            const li = document.createElement('li');
+            li.className = 'reel-item';
+            li.innerText = text;
+            return li;
+        }
 
+        // --- Mode & Daily ---
+        window.setMode = (mode) => {
+            currentMode = mode;
+            localStorage.setItem('mimi_mode', mode);
+            
+            document.getElementById('modeNormal').classList.toggle('active', mode === 'normal');
+            document.getElementById('modeDaily').classList.toggle('active', mode === 'daily');
+            
+            if (mode === 'daily') {
+                els.dailyBadge.style.display = 'block';
+                els.dailyBadge.innerText = `Day ${dailyCount}`;
+                els.dailyInput.value = dailyCount;
+                els.noRepeatCheck.checked = true;
+                els.noRepeatCheck.disabled = true;
+                els.dailyControl.style.display = 'flex';
+                els.modeDesc.innerText = I18N[currentLang].modeDailyDesc;
+            } else {
+                els.dailyBadge.style.display = 'none';
+                els.noRepeatCheck.disabled = false;
+                els.noRepeatCheck.checked = (localStorage.getItem('mimi_norepeat') === 'true');
+                els.dailyControl.style.display = 'none';
+                els.modeDesc.innerText = I18N[currentLang].modeNormalDesc;
+            }
+        };
+        els.dailyInput.addEventListener('change', (e) => {
+            let val = parseInt(e.target.value);
+            if(val < 1) val = 1;
+            dailyCount = val;
+            localStorage.setItem('mimi_daily_count', val);
+            els.dailyBadge.innerText = `Day ${val}`;
+        });
+        // Save NoRepeat state for Normal Mode
+        els.noRepeatCheck.addEventListener('change', (e) => {
+            if(currentMode === 'normal') localStorage.setItem('mimi_norepeat', e.target.checked);
+        });
+
+        // --- Result & Share ---
         function showResult(song) {
             currentWinner = song;
-            
-            // Font Sizing Logic
             const titleEl = document.getElementById('resTitle');
             titleEl.innerText = song.title;
             titleEl.className = 'res-title-main';
             if (song.title.length > 20) titleEl.classList.add('very-long');
             else if (song.title.length > 12) titleEl.classList.add('long');
-            
             document.getElementById('resSinger').innerText = song.singer;
             document.getElementById('resArtist').innerText = song.artist;
             document.getElementById('btnYt').href = song.url;
-            
             addToHistory(song);
             document.getElementById('resultModal').classList.add('active');
-            
             confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 }, colors: ['#74ebd5', '#9FACE6', '#ffffff'] });
             isSpinning = false;
             els.spinBtn.disabled = false;
         }
-
+        
         document.getElementById('btnOpenShare').addEventListener('click', () => {
             document.getElementById('resultModal').classList.remove('active');
             els.shareInput.value = '';
@@ -542,58 +771,108 @@
             document.getElementById('shareModal').classList.add('active');
             els.shareInput.focus();
         });
-
         els.shareInput.addEventListener('input', updateCharCount);
-
+        
         function updateCharCount() {
             if(!currentWinner) return;
-            const templateLen = getTemplateLength();
-            const userInputLen = els.shareInput.value.length;
-            const remaining = 140 - (templateLen + userInputLen);
+            let header = currentMode === 'daily' ? `${dailyCount - 1}日目の曲は` : "今回の曲は";
+            const fixed = `${header}\n「${currentWinner.title}」 / 「${currentWinner.artist} (${currentWinner.singer})」\nでした！\n\n\n\n↓「${currentWinner.title}」\n #MIMI_Roulette`;
+            const len = fixed.length + 23 + els.shareInput.value.length;
+            const remaining = 140 - len;
             els.charCount.innerText = remaining;
             els.charCount.classList.toggle('error', remaining < 0);
         }
-
-        function getTemplateLength() {
-            const artistDisplay = `「${currentWinner.artist} (${currentWinner.singer})」`;
-            const titleDisplay = `「${currentWinner.title}」`;
-            let header = currentMode === 'daily' ? `${dailyCount - 1}日目の曲は` : "今回の曲は";
-            const part1 = `${header}\n${titleDisplay} / ${artistDisplay}\nでした！\n\n`;
-            const part2 = `\n\n↓${titleDisplay}\n`;
-            const part3 = ` #MIMI_Roulette`; 
-            return part1.length + part2.length + 23 + part3.length;
-        }
-
-        function generatePostText(userThought) {
-            const artistDisplay = `「${currentWinner.artist} (${currentWinner.singer})」`;
-            const titleDisplay = `「${currentWinner.title}」`;
-            let header = currentMode === 'daily' ? `${dailyCount - 1}日目の曲は` : "今回の曲は";
-            return `${header}\n${titleDisplay} / ${artistDisplay}\nでした！\n\n${userThought}\n\n↓${titleDisplay}\n${currentWinner.url} #MIMI_Roulette`;
-        }
-
         document.getElementById('btnPostX').addEventListener('click', () => {
-            if(!currentWinner) return;
-            const text = generatePostText(els.shareInput.value);
-            const intent = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
-            window.open(intent, '_blank');
-            document.getElementById('shareModal').classList.remove('active');
+             if(!currentWinner) return;
+             let header = currentMode === 'daily' ? `${dailyCount - 1}日目の曲は` : "今回の曲は";
+             const text = `${header}\n「${currentWinner.title}」 / 「${currentWinner.artist} (${currentWinner.singer})」\nでした！\n\n${els.shareInput.value}\n\n↓「${currentWinner.title}」\n${currentWinner.url} #MIMI_Roulette`;
+             window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
+             document.getElementById('shareModal').classList.remove('active');
         });
+
+        // --- Info & Stats ---
+        document.getElementById('infoBtn').addEventListener('click', () => document.getElementById('infoModal').classList.add('active'));
+        window.openStats = () => {
+            document.getElementById('settingsModal').classList.remove('active'); // Close settings
+            document.getElementById('statTotal').innerText = history.length;
+            const counts = {};
+            history.forEach(h => { counts[h.title] = (counts[h.title] || 0) + 1; });
+            const sorted = Object.keys(counts).sort((a,b) => counts[b] - counts[a]).slice(0, 5);
+            const maxVal = sorted.length > 0 ? counts[sorted[0]] : 1;
+            const container = document.getElementById('statTopList');
+            container.innerHTML = '';
+            if(sorted.length === 0) container.innerHTML = '<div style="color:var(--text-sub); text-align:center;">No Data</div>';
+            else {
+                sorted.forEach(title => {
+                    const val = counts[title];
+                    const percent = (val / maxVal) * 100;
+                    const div = document.createElement('div');
+                    div.className = 'stat-bar-container';
+                    div.innerHTML = `<div class="stat-bar-label"><span>${title}</span><span>${val}</span></div><div class="stat-bar-bg"><div class="stat-bar-fill" style="width:0%"></div></div>`;
+                    container.appendChild(div);
+                    setTimeout(() => { div.querySelector('.stat-bar-fill').style.width = `${percent}%`; }, 50);
+                });
+            }
+            document.getElementById('statsModal').classList.add('active');
+        };
+
+        // --- Common Utils ---
+        function addToHistory(song) {
+            const date = new Date().toLocaleDateString();
+            history.unshift({ title: song.title, date: date });
+            if(history.length > 200) history.pop();
+            localStorage.setItem('mimi_history', JSON.stringify(history));
+            updateHistoryUI();
+        }
+        function updateHistoryUI() {
+            const list = document.getElementById('historyList');
+            list.innerHTML = '';
+            if(history.length === 0) { list.innerHTML = `<li style="padding:10px; color:var(--text-sub);">${I18N[currentLang].empty}</li>`; return; }
+            history.slice(0, 50).forEach(h => {
+                const li = document.createElement('li');
+                li.style.cssText = "border-bottom:1px dashed var(--glass-border); padding:8px 0; display:flex; justify-content:space-between; font-size:0.9rem; color:var(--text-sub);";
+                li.innerHTML = `<span>${h.title}</span><span style="opacity:0.7;">${h.date}</span>`;
+                list.appendChild(li);
+            });
+        }
+        window.clearHistory = () => { history = []; localStorage.removeItem('mimi_history'); updateHistoryUI(); };
+        window.exportData = () => {
+            const data = { history, disabledSongs, dailyCount, hapticsEnabled };
+            const blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"});
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `mimi_backup.json`; document.body.appendChild(a); a.click(); a.remove();
+        };
+        window.importData = (input) => {
+            const file = input.files[0]; if(!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if(data.history) { history = data.history; localStorage.setItem('mimi_history', JSON.stringify(history)); }
+                    if(data.disabledSongs) { disabledSongs = data.disabledSongs; localStorage.setItem('mimi_disabled', JSON.stringify(disabledSongs)); }
+                    if(data.dailyCount) { dailyCount = data.dailyCount; localStorage.setItem('mimi_daily_count', dailyCount); }
+                    if(data.hapticsEnabled !== undefined) { hapticsEnabled = data.hapticsEnabled; localStorage.setItem('mimi_haptics', hapticsEnabled); }
+                    alert("Done! Reloading..."); location.reload();
+                } catch(err) { alert("Error"); }
+            };
+            reader.readAsText(file);
+        };
 
         function applyTheme(theme) {
             const html = document.documentElement;
+            const metaTheme = document.getElementById('metaThemeColor');
             if(theme === 'dark') {
                 html.setAttribute('data-theme', 'dark');
                 els.themeBtn.innerHTML = '<span class="material-icons-round">light_mode</span>';
                 localStorage.setItem('theme', 'dark');
+                metaTheme.setAttribute('content', '#0f172a');
             } else {
                 html.removeAttribute('data-theme');
                 els.themeBtn.innerHTML = '<span class="material-icons-round">dark_mode</span>';
                 localStorage.setItem('theme', 'light');
+                metaTheme.setAttribute('content', '#f5f7fa');
             }
         }
-        els.themeBtn.addEventListener('click', () => {
-            applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
-        });
+        els.themeBtn.addEventListener('click', () => applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'));
 
         function applyLang(lang) {
             currentLang = lang;
@@ -604,46 +883,25 @@
                 if(I18N[lang][key]) el.innerHTML = I18N[lang][key];
             });
             els.shareInput.placeholder = I18N[lang].placeholder;
-            setMode(currentMode);
+            setMode(currentMode); // Update desc
         }
         els.langToggle.addEventListener('change', (e) => applyLang(e.target.checked ? 'en' : 'ja'));
 
-        function addToHistory(song) {
-            const date = new Date().toLocaleDateString();
-            history.unshift({ title: song.title, date: date });
-            if(history.length > 50) history.pop();
-            localStorage.setItem('mimi_history', JSON.stringify(history));
-            updateHistoryUI();
-        }
-        function updateHistoryUI() {
-            const list = document.getElementById('historyList');
-            list.innerHTML = '';
-            if(history.length === 0) { list.innerHTML = `<li style="padding:10px; color:var(--text-sub);">${I18N[currentLang].empty}</li>`; return; }
-            history.forEach(h => {
-                const li = document.createElement('li');
-                li.style.borderBottom = "1px dashed var(--glass-border)";
-                li.style.padding = "8px 0";
-                li.style.display = "flex"; li.style.justifyContent = "space-between";
-                li.style.fontSize = "0.9rem"; li.style.color = "var(--text-sub)";
-                li.innerHTML = `<span>${h.title}</span><span style="opacity:0.7;">${h.date}</span>`;
-                list.appendChild(li);
-            });
-        }
-        window.clearHistory = () => { history = []; localStorage.removeItem('mimi_history'); updateHistoryUI(); };
         window.closeModal = (id) => document.getElementById(id).classList.remove('active');
         document.getElementById('settingsBtn').addEventListener('click', () => document.getElementById('settingsModal').classList.add('active'));
-
         document.getElementById('btnResetConfirm').addEventListener('click', () => {
-            availableSongs = [...allSongs];
-            if(currentMode === 'daily') {
-                dailyCount = 1;
-                localStorage.setItem('mimi_daily_count', 1);
-                els.dailyBadge.innerText = `Day 1`;
-            }
+            availableSongs = getActiveSongs();
+            if(currentMode === 'daily') { dailyCount = 1; els.dailyInput.value = 1; localStorage.setItem('mimi_daily_count', 1); els.dailyBadge.innerText = `Day 1`; }
             document.getElementById('resetModal').classList.remove('active');
             confetti({ particleCount: 50, colors:['#74ebd5'] });
         });
-
+        function renderStaticReel() {
+            els.reel.innerHTML = '';
+            if(allSongs.length === 0) return;
+            allSongs.forEach(s => els.reel.appendChild(createItem(s.title)));
+            allSongs.forEach(s => els.reel.appendChild(createItem(s.title))); 
+            gsap.set(els.reel, { y: 105 }); 
+        }
     </script>
 </body>
 </html>

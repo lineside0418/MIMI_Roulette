@@ -1,10 +1,10 @@
 {
   "name": "MIMI Roulette",
-  "short_name": "MIMI Roulette",
+  "short_name": "MIMI",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#74ebd5",
+  "background_color": "#f5f7fa",
+  "theme_color": "#f5f7fa",
   "orientation": "portrait",
   "icons": [
     {
