@@ -54,7 +54,7 @@
             --shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
             --modal-bg: rgba(15, 23, 42, 0.95);
             --input-border: rgba(255, 255, 255, 0.1);
-            --input-bg: rgba(0, 0, 0, 0.3);
+            --input-bg: rgba(0, 0, 0, 0.2); /* Slightly darker/transparent for blending */
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
@@ -306,6 +306,54 @@
         .info-sub { font-size: 0.8rem; color: var(--text-sub); }
         .license-text { font-size: 0.75rem; color: var(--text-sub); text-align: center; line-height: 1.6; margin-top: 10px; }
 
+        /* FIXED: History List Styles (Robust) */
+        .history-list { 
+            width: 100%; 
+            min-height: 100px; /* Prevent collapse */
+            max-height: 150px; 
+            overflow-y: auto; 
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 0; 
+            margin: 10px 0; 
+            background: rgba(255,255,255,0.3); /* Visible background */
+            display: block; /* Ensure block layout */
+            flex-shrink: 0; /* Prevent flex crushing */
+        }
+        [data-theme="dark"] .history-list { 
+            background: rgba(0,0,0,0.2); /* Matching input style for blend */
+        }
+        
+        .history-item {
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            padding: 10px 15px;
+            border-bottom: 1px solid var(--glass-border);
+            font-size: 0.9rem; 
+            color: var(--text-main);
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .history-item:last-child { border-bottom: none; }
+        
+        .history-item span:first-child {
+            font-weight: 600; 
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap; 
+            flex: 1; margin-right: 10px;
+            text-align: left;
+        }
+        .history-item span:last-child { 
+            font-size: 0.75rem; opacity: 0.8; white-space: nowrap;
+        }
+        .history-empty {
+            padding: 20px; 
+            text-align: center; 
+            color: var(--text-sub); 
+            font-size: 0.9rem;
+            list-style: none;
+        }
+
     </style>
 </head>
 <body>
@@ -396,7 +444,7 @@
                 </a>
             </div>
             <div class="license-text">
-                <span data-i18n="version">Version</span> 1.8.0<br>
+                <span data-i18n="version">Version</span> 1.9.2<br>
                 <span data-i18n="license">This project is licensed under the MIT License.</span><br>
                 Music and Art rights belong to MIMI and respective artists.
             </div>
@@ -492,7 +540,7 @@
             </div>
             
             <div style="margin:20px 0 10px; font-weight:600;" data-i18n="history">History</div>
-            <ul id="historyList" class="history-list" style="width:100%; list-style:none; padding:0; max-height:120px; overflow-y:auto;"><li>Empty</li></ul>
+            <ul id="historyList" class="history-list"></ul>
             <div style="text-align:right; width:100%;"><button class="close-link" style="background:none; border:none;" onclick="clearHistory()" data-i18n="clear">Clear</button></div>
             
             <div style="margin-top:20px; width:100%; text-align:center;">
@@ -540,15 +588,25 @@
         };
 
         let currentLang = localStorage.getItem('mimi_lang') || 'ja';
-        // Base config - updated dynamically
         let spinConfig = { itemHeight: 70, duration: 7 };
         
-        // --- State ---
         let allSongs = [];
         let availableSongs = [];
-        let history = JSON.parse(localStorage.getItem('mimi_history')) || [];
+        let history = [];
+        try {
+            const raw = localStorage.getItem('mimi_history');
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) {
+                    history = parsed.filter(item => item && item.title && item.date);
+                }
+            }
+        } catch(e) {
+            history = [];
+            localStorage.removeItem('mimi_history');
+        }
+
         let disabledSongs = JSON.parse(localStorage.getItem('mimi_disabled') || '[]');
-        
         let currentMode = localStorage.getItem('mimi_mode') || 'normal'; 
         let currentSpeed = localStorage.getItem('mimi_speed') || 'long';
         let dailyCount = parseInt(localStorage.getItem('mimi_daily_count') || '1');
@@ -589,7 +647,8 @@
                 setMode(currentMode); 
                 setSpeed(currentSpeed); 
                 renderStaticReel(); 
-                updateHistoryUI();
+                updateHistoryUI(); // Initial call
+
             } catch (e) {
                 console.error(e);
                 els.reel.innerHTML = '<li class="reel-item">Error Loading Data</li>';
@@ -638,7 +697,8 @@
             localStorage.setItem('mimi_disabled', JSON.stringify(disabledSongs));
         };
         window.toggleAllSongs = (enable) => {
-            disabledSongs = enable ? [] : allSongs.map(s => s.url);
+            if(enable) disabledSongs = [];
+            else disabledSongs = allSongs.map(s => s.url);
             localStorage.setItem('mimi_disabled', JSON.stringify(disabledSongs));
             renderSongList();
         };
@@ -668,34 +728,18 @@
             startSpin(winner, activePool);
         });
 
-        // Revised Logic: Fixed pattern repeating
         function startSpin(winner, pool) {
             isSpinning = true;
             els.spinBtn.disabled = true;
             
-            // 1. Determine "Items to Scroll" based on Duration & Speed
-            // Speed goal: ~15 items/sec
             const itemsToScroll = Math.floor(spinConfig.duration * 15);
-            
-            // 2. Pattern Construction: Repeat pool order
-            // Ensure pool contains winner (always true from logic above)
-            
-            // Calculate how many full pool loops we need to cover the distance
             const loopsNeeded = Math.ceil((itemsToScroll + 5) / pool.length); 
-            // +5 buffer for winner alignment
-            
-            // We ensure at least 2 loops to have visible scrolling
             const finalLoops = Math.max(2, loopsNeeded);
             
             const fragment = document.createDocumentFragment();
-            
-            // 3. Build Strip: [Pool] * finalLoops
             for(let i=0; i < finalLoops; i++) {
-                pool.forEach(song => {
-                    fragment.appendChild(createItem(song.title));
-                });
+                pool.forEach(song => { fragment.appendChild(createItem(song.title)); });
             }
-            // Add a buffer at the end to prevent white space
             for(let i=0; i < 5; i++) {
                 if(pool[i]) fragment.appendChild(createItem(pool[i].title));
             }
@@ -704,16 +748,10 @@
             els.reel.appendChild(fragment);
             gsap.set(els.reel, { y: 0 });
 
-            // 4. Find Target Index
-            // We want to land on 'winner' that is closest to 'itemsToScroll'
             const winnerIdxInPool = pool.findIndex(s => s.url === winner.url);
-            
-            // Calculate total index in the strip
-            // Logic: We want to land in the last full loop section or second to last
-            const targetLoop = finalLoops - 1; // 0-based
+            const targetLoop = finalLoops - 1; 
             const targetTotalIndex = (targetLoop * pool.length) + winnerIdxInPool;
             
-            // Mark winner
             const allItems = els.reel.querySelectorAll('.reel-item');
             if(allItems[targetTotalIndex]) allItems[targetTotalIndex].id = 'winnerItem';
 
@@ -829,7 +867,6 @@
             els.shareInput.focus();
         });
         els.shareInput.addEventListener('input', updateCharCount);
-        
         function updateCharCount() {
             if(!currentWinner) return;
             let header = currentMode === 'daily' ? `${dailyCount - 1}日目の曲は` : "今回の曲は";
@@ -874,25 +911,60 @@
             document.getElementById('statsModal').classList.add('active');
         };
 
+        // --- History Logic REBUILT ---
         function addToHistory(song) {
             const date = new Date().toLocaleDateString();
-            history.unshift({ title: song.title, date: date });
+            const newItem = { title: song.title, date: date };
+            history.unshift(newItem);
             if(history.length > 200) history.pop();
             localStorage.setItem('mimi_history', JSON.stringify(history));
-            updateHistoryUI();
+            updateHistoryUI(); 
         }
+
         function updateHistoryUI() {
             const list = document.getElementById('historyList');
+            if(!list) return;
+            
+            // Totally clear current HTML
             list.innerHTML = '';
-            if(history.length === 0) { list.innerHTML = `<li style="padding:10px; color:var(--text-sub);">${I18N[currentLang].empty}</li>`; return; }
+
+            if(history.length === 0) { 
+                list.innerHTML = `<li class="history-empty">${I18N[currentLang].empty}</li>`; 
+                return; 
+            }
+            
+            // Rebuild using document fragment for safety
+            const fragment = document.createDocumentFragment();
             history.slice(0, 50).forEach(h => {
                 const li = document.createElement('li');
-                li.style.cssText = "border-bottom:1px dashed var(--glass-border); padding:8px 0; display:flex; justify-content:space-between; font-size:0.9rem; color:var(--text-sub);";
-                li.innerHTML = `<span>${h.title}</span><span style="opacity:0.7;">${h.date}</span>`;
-                list.appendChild(li);
+                li.className = 'history-item';
+                
+                const titleSpan = document.createElement('span');
+                titleSpan.textContent = h.title || 'Unknown';
+                
+                const dateSpan = document.createElement('span');
+                dateSpan.className = 'hist-date';
+                dateSpan.textContent = h.date || '-';
+                
+                li.appendChild(titleSpan);
+                li.appendChild(dateSpan);
+                fragment.appendChild(li);
             });
+            list.appendChild(fragment);
         }
-        window.clearHistory = () => { history = []; localStorage.removeItem('mimi_history'); updateHistoryUI(); };
+        
+        // Ensure UI updates on settings open
+        document.getElementById('settingsBtn').addEventListener('click', () => {
+            updateHistoryUI(); 
+            document.getElementById('settingsModal').classList.add('active');
+        });
+
+        window.clearHistory = () => { 
+            history = []; 
+            localStorage.removeItem('mimi_history'); 
+            updateHistoryUI(); 
+        };
+        
         window.exportData = () => {
             const data = { history, disabledSongs, dailyCount, hapticsEnabled, currentSpeed };
             const blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"});
@@ -943,11 +1015,11 @@
             els.shareInput.placeholder = I18N[lang].placeholder;
             setMode(currentMode); // Update desc
             setSpeed(currentSpeed);
+            updateHistoryUI(); // Force update text
         }
         els.langToggle.addEventListener('change', (e) => applyLang(e.target.checked ? 'en' : 'ja'));
 
         window.closeModal = (id) => document.getElementById(id).classList.remove('active');
-        document.getElementById('settingsBtn').addEventListener('click', () => document.getElementById('settingsModal').classList.add('active'));
         document.getElementById('btnResetConfirm').addEventListener('click', () => {
             availableSongs = getActiveSongs();
             if(currentMode === 'daily') { dailyCount = 1; els.dailyInput.value = 1; localStorage.setItem('mimi_daily_count', 1); els.dailyBadge.innerText = `Day 1`; }
