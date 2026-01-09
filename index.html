@@ -23,7 +23,6 @@
     
     <style>
         :root {
-            /* Light Theme */
             --bg-start: #f5f7fa;
             --bg-end: #c3cfe2;
             --bg-gradient: linear-gradient(135deg, var(--bg-start) 0%, var(--bg-end) 100%);
@@ -41,7 +40,6 @@
         }
 
         [data-theme="dark"] {
-            /* Dark Theme */
             --bg-start: #0f172a;
             --bg-end: #312e81;
             --bg-gradient: linear-gradient(135deg, var(--bg-start) 0%, #1e1b4b 50%, var(--bg-end) 100%);
@@ -59,18 +57,17 @@
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
 
-        /* Flicker Fix: Apply background and transition to html root */
         html {
             height: 100%;
-            background: var(--bg-gradient);
-            background-attachment: fixed; /* Ensures gradient covers scroll area */
+            background: var(--bg-start); /* Fallback */
+            background-image: var(--bg-gradient);
+            background-attachment: fixed;
             transition: background 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
 
         body {
             margin: 0; font-family: 'Zen Kaku Gothic New', sans-serif;
             min-height: 100vh;
-            /* Remove background from body to avoid layering issues */
             background: transparent; 
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             color: var(--text-main); 
@@ -394,7 +391,7 @@
                 </a>
             </div>
             <div class="license-text">
-                <span data-i18n="version">Version</span> 1.4.0<br>
+                <span data-i18n="version">Version</span> 1.4.1<br>
                 <span data-i18n="license">This project is licensed under the MIT License.</span><br>
                 Music and Art rights belong to MIMI and respective artists.
             </div>
@@ -635,7 +632,8 @@
             localStorage.setItem('mimi_disabled', JSON.stringify(disabledSongs));
         };
         window.toggleAllSongs = (enable) => {
-            disabledSongs = enable ? [] : allSongs.map(s => s.url);
+            if(enable) disabledSongs = [];
+            else disabledSongs = allSongs.map(s => s.url);
             localStorage.setItem('mimi_disabled', JSON.stringify(disabledSongs));
             renderSongList();
         };
@@ -651,6 +649,7 @@
             if(activePool.length === 0) { alert("No active songs!"); return; }
 
             const isNoRepeat = currentMode === 'daily' || els.noRepeatCheck.checked;
+            // Sync available
             availableSongs = availableSongs.filter(s => !disabledSongs.includes(s.url));
             let targetList = isNoRepeat ? availableSongs.filter(s => !disabledSongs.includes(s.url)) : activePool;
 
@@ -666,26 +665,78 @@
             startSpin(winner, activePool);
         });
 
+        // Smart Reel Construction (Fixes repeats)
+        function generateSmartReel(pool, winner, loops) {
+            const strip = [];
+            let lastItem = null;
+
+            // 1. Fill Head (Loops)
+            for (let i = 0; i < loops * pool.length; i++) {
+                let candidate = pool[Math.floor(Math.random() * pool.length)];
+                // Avoid adjacent duplicates if pool > 1
+                if (pool.length > 1 && lastItem && candidate.title === lastItem.title) {
+                    // Try to pick another one (simple retry)
+                    let attempts = 0;
+                    while (candidate.title === lastItem.title && attempts < 5) {
+                        candidate = pool[Math.floor(Math.random() * pool.length)];
+                        attempts++;
+                    }
+                }
+                strip.push(candidate);
+                lastItem = candidate;
+            }
+
+            // 2. Insert Winner
+            strip.push(winner);
+            lastItem = winner;
+
+            // 3. Fill Tail (3 items)
+            for (let i = 0; i < 3; i++) {
+                let candidate = pool[Math.floor(Math.random() * pool.length)];
+                if (pool.length > 1 && lastItem && candidate.title === lastItem.title) {
+                    let attempts = 0;
+                    while (candidate.title === lastItem.title && attempts < 5) {
+                        candidate = pool[Math.floor(Math.random() * pool.length)];
+                        attempts++;
+                    }
+                }
+                strip.push(candidate);
+                lastItem = candidate;
+            }
+            return strip;
+        }
+
         function startSpin(winner, pool) {
             isSpinning = true;
             els.spinBtn.disabled = true;
-            const fragment = document.createDocumentFragment();
             
-            for(let i=0; i < CONFIG.loops; i++) pool.forEach(s => fragment.appendChild(createItem(s.title)));
-            const winnerItem = createItem(winner.title);
-            winnerItem.id = 'winnerItem';
-            fragment.appendChild(winnerItem);
-            for(let i=0; i<3; i++) pool.forEach(s => fragment.appendChild(createItem(s.title)));
+            // Build smart reel
+            const stripData = generateSmartReel(pool, winner, CONFIG.loops);
+            
+            const fragment = document.createDocumentFragment();
+            // Winner is at index: (length - 1) - 3 = length - 4
+            // Wait, logic: Head + Winner + Tail(3).
+            // Winner Index = Head Length.
+            
+            stripData.forEach((song, idx) => {
+                const li = createItem(song.title);
+                // Winner logic based on data structure
+                if (song === winner && idx === (stripData.length - 4)) {
+                    li.id = 'winnerItem';
+                }
+                fragment.appendChild(li);
+            });
 
             els.reel.innerHTML = '';
             els.reel.appendChild(fragment);
             gsap.set(els.reel, { y: 0 });
 
-            const targetIndex = (pool.length * CONFIG.loops); 
-            const targetY = 105 - (targetIndex * CONFIG.itemHeight);
+            // Winner is the 4th item from the end
+            const winnerIndex = stripData.length - 4;
+            const targetY = 105 - (winnerIndex * CONFIG.itemHeight);
             
-            // Crossing Logic for Haptics
-            let lastY = 0;
+            // Haptics State
+            let lastHapticIndex = 0;
 
             gsap.to(els.reel, {
                 y: targetY,
@@ -693,14 +744,15 @@
                 ease: "power4.out",
                 onUpdate: function() {
                     const currentY = gsap.getProperty(els.reel, "y");
-                    // Check if we crossed a 'grid line' of itemHeight
-                    const lastIndex = Math.floor(lastY / CONFIG.itemHeight);
-                    const currentIndex = Math.floor(currentY / CONFIG.itemHeight);
+                    // Calculate which item index is currently crossing the "needle"
+                    // y moves negative. -currentY is distance traveled.
+                    const distance = Math.abs(currentY);
+                    const currentIndex = Math.floor(distance / CONFIG.itemHeight);
                     
-                    if (currentIndex !== lastIndex) {
-                        triggerHaptic(8); // Short pulse per item crossing
+                    if (currentIndex > lastHapticIndex) {
+                        triggerHaptic(8); // Crisp click
+                        lastHapticIndex = currentIndex;
                     }
-                    lastY = currentY;
                 },
                 onComplete: function() {
                     const winItem = document.getElementById('winnerItem');
@@ -792,7 +844,6 @@
         function updateCharCount() {
             if(!currentWinner) return;
             let header = currentMode === 'daily' ? `${dailyCount - 1}日目の曲は` : "今回の曲は";
-            // Check English or Japanese for template
             if(currentLang === 'en') header = currentMode === 'daily' ? `Day ${dailyCount - 1} Song:` : "Today's Song:";
             
             const fixed = `${header}\n「${currentWinner.title}」 / 「${currentWinner.artist} (${currentWinner.singer})」\n\n\n\n↓「${currentWinner.title}」\n #MIMI_Roulette`;

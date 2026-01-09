@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mimi-roulette-v5'; // ★更新するたびにここを v4, v5... と変えるのが作法
+const CACHE_NAME = 'mimi-roulette-v6'; // ★更新するたびにここを v4, v5... と変えるのが作法
 const urlsToCache = [
   './',
   './index.html',
