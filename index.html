@@ -804,6 +804,7 @@
 
         function updateDualModeUI() {
             const container = document.getElementById('mainContainer');
+
             if (isDualMode) {
                 container.classList.add('dual-active');
                 document.getElementById('reelWindow2').style.display = 'block';
@@ -811,7 +812,10 @@
                 container.classList.remove('dual-active');
                 document.getElementById('reelWindow2').style.display = 'none';
             }
-            renderStaticReel(); 
+
+            requestAnimationFrame(() => {
+                renderStaticReel();
+            });
         }
 
         function triggerHaptic(ms = 10) {
@@ -936,7 +940,16 @@
                 const allItems = reelEl.querySelectorAll('.reel-item');
                 if(allItems[targetTotalIndex]) allItems[targetTotalIndex].id = `winnerItem${index + 1}`;
 
-                const targetY = 105 - (targetTotalIndex * spinConfig.itemHeight);
+                const reelWindow =
+                    document.getElementById(`reelWindow${index + 1}`);
+
+                const centerOffset =
+                    reelWindow.clientHeight / 2 -
+                    spinConfig.itemHeight / 2;
+
+                const targetY =
+                    centerOffset -
+                    targetTotalIndex * spinConfig.itemHeight;
                 
                 let lastY = 0;
                 let distAcc = 0;
@@ -1288,14 +1301,26 @@
         });
         
         function renderStaticReel() {
-            const reelsToRender = isDualMode ? [els.reel1, els.reel2] : [els.reel1];
-            
-            reelsToRender.forEach(reel => {
+            const reelsToRender = isDualMode
+                ? [els.reel1, els.reel2]
+                : [els.reel1];
+
+            reelsToRender.forEach((reel, index) => {
                 reel.innerHTML = '';
-                if(allSongs.length === 0) return;
+
+                if (allSongs.length === 0) return;
+
                 allSongs.forEach(s => reel.appendChild(createItem(s.title)));
-                allSongs.forEach(s => reel.appendChild(createItem(s.title))); 
-                gsap.set(reel, { y: 105 }); 
+                allSongs.forEach(s => reel.appendChild(createItem(s.title)));
+
+                const reelWindow =
+                    document.getElementById(`reelWindow${index + 1}`);
+
+                const centerOffset =
+                    reelWindow.clientHeight / 2 -
+                    spinConfig.itemHeight / 2;
+
+                gsap.set(reel, { y: centerOffset });
             });
         }
     </script>
