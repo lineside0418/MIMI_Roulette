@@ -78,16 +78,15 @@
 
         html {
             height: 100%;
-            background: var(--bg-start);
-            background-image: var(--bg-gradient);
-            background-attachment: fixed;
-            transition: background 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+            background-color: var(--bg-start);
+            transition: background-color 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
 
         body {
             margin: 0; font-family: 'Zen Kaku Gothic New', sans-serif;
             min-height: 100vh;
-            background: transparent; 
+            background-image: var(--bg-gradient);
+            background-attachment: fixed;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             color: var(--text-main); 
             overflow: hidden;
@@ -130,6 +129,7 @@
         }
         .info-btn:hover { opacity: 1; transform: scale(1.1); background: var(--glass-border); }
 
+        /* コンテナ・ルーレット */
         .container {
             width: 90%; max-width: 420px; height: 55vh; max-height: 500px;
             background: var(--glass-bg); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
@@ -138,9 +138,14 @@
             display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden;
             transition: all 0.5s ease;
         }
+        
+        .reels-wrapper {
+            width: 100%; display: flex; justify-content: center; gap: 10px;
+            padding: 0 10px;
+        }
 
         .reel-window {
-            width: 100%; height: 280px; position: relative; overflow: hidden;
+            flex: 1; height: 280px; position: relative; overflow: hidden;
             mask-image: linear-gradient(to bottom, transparent 0%, black 25%, black 75%, transparent 100%);
             -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 25%, black 75%, transparent 100%);
         }
@@ -149,7 +154,7 @@
         .reel-item {
             height: var(--item-h); display: flex; align-items: center; justify-content: center;
             font-size: 1.1rem; color: var(--text-sub); font-weight: 400;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 25px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 15px;
             transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.4s ease, text-shadow 0.4s ease;
         }
         .reel-item.winner-active {
@@ -165,7 +170,7 @@
 
         .selection-frame {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 70%; height: var(--item-h);
+            width: 80%; height: var(--item-h);
             border-top: 1px solid var(--accent); border-bottom: 1px solid var(--accent);
             background: linear-gradient(90deg, transparent, rgba(116, 235, 213, 0.05), transparent);
             pointer-events: none; z-index: 5; opacity: 0.6;
@@ -186,6 +191,37 @@
         .spin-btn:active { transform: scale(0.98); }
         .spin-btn:disabled { opacity: 0.6; cursor: default; transform: none; box-shadow: none; filter: grayscale(0.4); }
 
+        /* * 【UI改善】PCデュアル時のレイアウト */
+        @media (min-width: 601px) {
+            .container.dual-active { max-width: 700px; }
+            .modal-card.is-dual { max-width: 850px; }
+            .res-data-container.is-dual {
+                flex-direction: row; align-items: stretch; gap: 20px;
+            }
+            .res-data-container.is-dual > .res-item {
+                flex: 1; min-width: 0;
+            }
+        }
+
+        /* * 【UI改善】スマホデュアル時のレイアウトを完全に分離して破綻を防ぐ */
+        @media (max-width: 600px) {
+            .container.dual-active {
+                height: auto; max-height: 75vh; padding: 25px 0;
+            }
+            .container.dual-active .reels-wrapper {
+                flex-direction: column; gap: 5px;
+            }
+            .container.dual-active .reel-window {
+                height: 160px; flex: none; /* 縦幅を抑えて2つ収める */
+            }
+            .container.dual-active .spin-btn {
+                margin-top: 15px; width: 160px; padding: 14px 0;
+            }
+            .res-data-container.is-dual {
+                flex-direction: column; gap: 15px;
+            }
+        }
+
         /* Modals */
         .modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -197,7 +233,7 @@
         .modal.active { opacity: 1; pointer-events: all; }
         
         .modal-card {
-            background: var(--modal-bg); width: 88%; max-width: 380px; padding: 45px 35px;
+            background: var(--modal-bg); width: 88%; max-width: 420px; padding: 35px 30px;
             border-radius: 36px; border: 1px solid var(--glass-border); text-align: center;
             box-shadow: 0 30px 60px -15px rgba(0,0,0,0.3);
             transform: scale(0.9) translateY(20px); transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
@@ -206,37 +242,77 @@
         }
         .modal.active .modal-card { transform: scale(1) translateY(0); }
 
-        /* Typography */
+        /* * 【UI改善】結果カード内のデザイン・サムネイル表示 */
+        .res-data-container {
+            display: flex; flex-direction: column; width: 100%; gap: 15px; margin-bottom: 15px;
+        }
+        .res-item {
+            display: flex; flex-direction: column; align-items: center;
+            background: rgba(127,127,127,0.05); padding: 20px; border-radius: 24px;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+            width: 100%;
+        }
+        [data-theme="dark"] .res-item { background: rgba(0,0,0,0.2); }
+
+        .track-header {
+            font-size: 0.85rem; color: var(--accent); font-weight: 700; margin-bottom: 10px;
+            text-transform: uppercase; letter-spacing: 0.1em;
+        }
+
+        .res-thumb-wrap {
+            position: relative; width: 100%; aspect-ratio: 16/9; border-radius: 12px;
+            overflow: hidden; margin-bottom: 15px; border: 1px solid var(--glass-border);
+            background: rgba(0,0,0,0.1); box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .res-thumb {
+            width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease;
+        }
+        .res-thumb-wrap:hover .res-thumb { transform: scale(1.05); }
+        
+        .res-thumb-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.2); display: flex; justify-content: center; align-items: center;
+            text-decoration: none; color: #fff; transition: background 0.3s;
+        }
+        .res-thumb-wrap:hover .res-thumb-overlay { background: rgba(0,0,0,0.4); }
+        .res-thumb-overlay .material-icons-round {
+            font-size: 48px; text-shadow: 0 4px 10px rgba(0,0,0,0.5); transition: transform 0.2s;
+        }
+        .res-thumb-overlay:hover .material-icons-round { transform: scale(1.15); }
+
         .res-singer-badge {
             background: rgba(127,127,127,0.1); color: var(--text-sub);
-            padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 500;
-            margin-bottom: 15px; border: 1px solid var(--glass-border); font-family: 'Inter';
+            padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600;
+            margin-bottom: 8px; border: 1px solid var(--glass-border); font-family: 'Inter';
         }
         .res-title-main {
-            font-size: 1.8rem; font-weight: 700; line-height: 1.3;
+            font-size: 1.5rem; font-weight: 700; line-height: 1.3;
             background: linear-gradient(135deg, var(--text-main) 30%, var(--text-sub) 100%);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            margin-bottom: 8px; 
+            margin-bottom: 5px; 
             word-wrap: break-word; overflow-wrap: break-word; white-space: normal; max-width: 100%;
-            letter-spacing: -0.02em;
+            letter-spacing: -0.02em; text-align: center;
         }
-        .res-title-main.long { font-size: 1.5rem; }
-        .res-title-main.very-long { font-size: 1.25rem; }
-        .res-artist-sub { font-size: 1rem; color: var(--text-sub); margin-bottom: 40px; letter-spacing: 0.05em; font-weight: 300; }
+        .res-title-main.long { font-size: 1.3rem; }
+        .res-title-main.very-long { font-size: 1.1rem; }
+        .res-artist-sub { font-size: 0.9rem; color: var(--text-sub); margin-bottom: 15px; letter-spacing: 0.05em; font-weight: 300; }
 
         /* Buttons & Inputs */
         .action-btn {
-            display: flex; justify-content: center; align-items: center; width: 100%; padding: 15px 0;
-            border-radius: 18px; margin-bottom: 12px; text-decoration: none; font-weight: 600; color: #fff;
+            display: flex; justify-content: center; align-items: center; width: 100%; padding: 14px 0;
+            border-radius: 16px; margin-bottom: 12px; text-decoration: none; font-weight: 600; color: #fff;
             font-size: 0.95rem; border: none; cursor: pointer; transition: transform 0.2s, opacity 0.2s;
-            font-family: 'Inter';
+            font-family: 'Inter'; box-shadow: 0 4px 15px rgba(0,0,0,0.05);
         }
-        .action-btn:hover { transform: translateY(-2px); opacity: 0.95; }
-        .btn-yt { background: #1a1a1a; } 
+        .action-btn:hover { transform: translateY(-2px); opacity: 0.95; box-shadow: 0 6px 20px rgba(0,0,0,0.1); }
+        .action-btn:active { transform: translateY(0); }
+        
+        .btn-yt { background: #1a1a1a; margin-bottom: 0; } 
         [data-theme="dark"] .btn-yt { background: #e02d2d; }
         [data-theme="anniversary"] .btn-yt { background: #d4af37; color: #fff; }
         
-        .btn-tw { background: #000; } 
+        .btn-tw { background: #000; margin-top: 10px; } 
         [data-theme="dark"] .btn-tw { background: #fff; color:#000; }
         [data-theme="anniversary"] .btn-tw { background: #fff; color: #d4af37; border: 1px solid #d4af37; }
         
@@ -336,54 +412,26 @@
         .license-text { font-size: 0.75rem; color: var(--text-sub); text-align: center; line-height: 1.6; margin-top: 10px; }
 
         .history-list { 
-            width: 100%; 
-            min-height: 100px;
-            max-height: 150px; 
-            overflow-y: auto; 
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            padding: 0; 
-            margin: 10px 0; 
-            background: rgba(255,255,255,0.3);
-            display: block;
-            flex-shrink: 0;
+            width: 100%; min-height: 100px; max-height: 150px; overflow-y: auto; 
+            border: 1px solid var(--glass-border); border-radius: 12px;
+            padding: 0; margin: 10px 0; background: rgba(255,255,255,0.3);
+            display: block; flex-shrink: 0;
         }
-        [data-theme="dark"] .history-list { 
-            background: rgba(0,0,0,0.2);
-        }
-        [data-theme="anniversary"] .history-list {
-            background: rgba(255, 255, 255, 0.5);
-        }
+        [data-theme="dark"] .history-list { background: rgba(0,0,0,0.2); }
+        [data-theme="anniversary"] .history-list { background: rgba(255, 255, 255, 0.5); }
         
         .history-item {
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center;
-            padding: 10px 15px;
-            border-bottom: 1px solid var(--glass-border);
-            font-size: 0.9rem; 
-            color: var(--text-main);
-            width: 100%;
-            box-sizing: border-box;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 15px; border-bottom: 1px solid var(--glass-border);
+            font-size: 0.9rem; color: var(--text-main); width: 100%; box-sizing: border-box;
         }
         .history-item:last-child { border-bottom: none; }
-        
         .history-item span:first-child {
-            font-weight: 600; 
-            overflow: hidden; text-overflow: ellipsis; white-space: nowrap; 
-            flex: 1; margin-right: 10px;
-            text-align: left;
+            font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; 
+            flex: 1; margin-right: 10px; text-align: left;
         }
-        .history-item span:last-child { 
-            font-size: 0.75rem; opacity: 0.8; white-space: nowrap;
-        }
-        .history-empty {
-            padding: 20px; 
-            text-align: center; 
-            color: var(--text-sub); 
-            font-size: 0.9rem;
-            list-style: none;
-        }
+        .history-item span:last-child { font-size: 0.75rem; opacity: 0.8; white-space: nowrap; }
+        .history-empty { padding: 20px; text-align: center; color: var(--text-sub); font-size: 0.9rem; list-style: none; }
 
     </style>
 </head>
@@ -402,24 +450,28 @@
 
     <div id="dailyBadge" class="day-badge" style="display:none;">Day 1</div>
 
-    <div class="container">
-        <div class="reel-window">
-            <div class="selection-frame"></div>
-            <ul class="reel-list" id="reelList">
-                <li class="reel-item">Loading...</li>
-            </ul>
+    <div class="container" id="mainContainer">
+        <div class="reels-wrapper" id="reelsWrapper">
+            <div class="reel-window" id="reelWindow1">
+                <div class="selection-frame"></div>
+                <ul class="reel-list" id="reelList1">
+                    <li class="reel-item">Loading...</li>
+                </ul>
+            </div>
+            
+            <div class="reel-window" id="reelWindow2" style="display: none;">
+                <div class="selection-frame"></div>
+                <ul class="reel-list" id="reelList2">
+                    <li class="reel-item">Loading...</li>
+                </ul>
+            </div>
         </div>
         <button id="spinBtn" class="spin-btn">SPIN</button>
     </div>
 
     <div id="resultModal" class="modal">
-        <div class="modal-card">
-            <div id="resSinger" class="res-singer-badge">Singer</div>
-            <div id="resTitle" class="res-title-main">Title</div>
-            <div id="resArtist" class="res-artist-sub">MIMI</div>
-            <a id="btnYt" href="#" target="_blank" class="action-btn btn-yt">
-                <span style="margin-right:8px">▶</span> <span data-i18n="youtube">Play on YouTube</span>
-            </a>
+        <div class="modal-card" id="resultModalCard">
+            <div id="resDataContainer" class="res-data-container"></div>
             <button id="btnOpenShare" class="action-btn btn-tw"><span data-i18n="share">Share on X</span></button>
             <div onclick="closeModal('resultModal')" class="close-link" data-i18n="close">Close</div>
         </div>
@@ -475,7 +527,7 @@
                 </a>
             </div>
             <div class="license-text">
-                <span data-i18n="version">Version</span> 1.9.3<br>
+                <span data-i18n="version">Version</span> 2.1.0<br>
                 <span data-i18n="license">This project is licensed under the MIT License.</span><br>
                 Music and Art rights belong to MIMI and respective artists.
             </div>
@@ -519,6 +571,14 @@
                     <span id="langLabel" style="color:var(--accent);">JA</span>
                     <label class="switch"><input type="checkbox" id="langToggle"><span class="slider"></span></label>
                 </div>
+            </div>
+
+            <div class="setting-row">
+                <div>
+                    <div data-i18n="dualMode">Dual Mode</div>
+                    <div class="setting-desc" data-i18n="dualModeDesc">2曲同時に抽選します</div>
+                </div>
+                <label class="switch"><input type="checkbox" id="checkDualMode"><span class="slider"></span></label>
             </div>
 
             <div class="setting-row">
@@ -587,10 +647,10 @@
                 MIMI 10th<br>Anniversary!
             </div>
             <div style="font-size:0.95rem; color:var(--text-sub); margin-bottom:25px; line-height:1.6; font-weight:500; text-align:center;">
-                10周年おめでとうございます！<br>今までも、そしてこれからも。ずっと応援しています！
+                10周年おめでとうございます！🎉<br>今日は精一杯お祝いしようね！
             </div>
             <button onclick="closeModal('annivModal'); triggerHaptic(50); confetti({particleCount: 300, spread: 150, zIndex: 1000, colors: ['#d4af37', '#f2c94c', '#ffffff', '#fdf9f1']});" class="action-btn btn-post" style="box-shadow: 0 8px 25px rgba(212,175,55,0.4);">
-                ルーレットを回そう！
+                お祝いする！
             </button>
         </div>
     </div>
@@ -613,7 +673,10 @@
                 infoTitle: "インフォメーション", developer: "開発者", source: "ソースコード",
                 officialCh: "公式チャンネル", version: "バージョン", license: "このプロジェクトはMITライセンスの下で公開されています。また、このサイトはリンクフリーです。",
                 dayCount: "日数:", export: "保存", import: "読込",
-                spinDuration: "回転時間", long: "長め", medium: "普通", short: "短め"
+                spinDuration: "回転時間", long: "長め", medium: "普通", short: "短め",
+                dualMode: "デュアルモード", dualModeDesc: "2曲同時に抽選します",
+                notEnoughSongs: "曲が足りません！重複なし設定をオフにするか、曲を追加してね。",
+                track: "曲目"
             },
             en: {
                 youtube: "Play on YouTube", share: "Share on X", close: "Close",
@@ -629,7 +692,10 @@
                 infoTitle: "Information", developer: "Developer", source: "Source Code",
                 officialCh: "Official Channel", version: "Version", license: "This project is licensed under the MIT License, and you are free to link to this site without permission.",
                 dayCount: "Day:", export: "Export", import: "Import",
-                spinDuration: "Spin Duration", long: "Long", medium: "Medium", short: "Short"
+                spinDuration: "Spin Duration", long: "Long", medium: "Medium", short: "Short",
+                dualMode: "Dual Mode", dualModeDesc: "Spin 2 songs at once",
+                notEnoughSongs: "Not enough songs! Turn off No Repeat or add more.",
+                track: "TRACK"
             }
         };
 
@@ -657,12 +723,15 @@
         let currentSpeed = localStorage.getItem('mimi_speed') || 'long';
         let dailyCount = parseInt(localStorage.getItem('mimi_daily_count') || '1');
         let hapticsEnabled = (localStorage.getItem('mimi_haptics') !== 'false');
+        
+        let isDualMode = (localStorage.getItem('mimi_dual_mode') === 'true');
 
-        let currentWinner = null;
+        let currentWinners = [];
         let isSpinning = false;
         
         const els = {
-            reel: document.getElementById('reelList'),
+            reel1: document.getElementById('reelList1'),
+            reel2: document.getElementById('reelList2'),
             spinBtn: document.getElementById('spinBtn'),
             themeBtn: document.getElementById('themeToggle'),
             langToggle: document.getElementById('langToggle'),
@@ -670,6 +739,7 @@
             shareInput: document.getElementById('shareInput'),
             charCount: document.getElementById('charCount'),
             noRepeatCheck: document.getElementById('checkNoRepeat'),
+            dualModeCheck: document.getElementById('checkDualMode'), 
             dailyBadge: document.getElementById('dailyBadge'),
             modeDesc: document.getElementById('modeDesc'),
             dailyControl: document.getElementById('dailyControl'),
@@ -679,6 +749,14 @@
             hapticsCheck: document.getElementById('checkHaptics')
         };
 
+        // * 【UI改善】YouTubeのURLから動画IDを抽出する関数
+        function getYouTubeID(url) {
+            if (!url) return null;
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+            const match = url.match(regExp);
+            return (match && match[2].length === 11) ? match[2] : null;
+        }
+
         async function init() {
             try {
                 // 10周年判定 (2026年6月9日)
@@ -687,7 +765,7 @@
                 
                 let savedTheme = localStorage.getItem('theme');
                 if (isAnniversaryDay && !sessionStorage.getItem('anniv_shown')) {
-                    savedTheme = 'anniversary'; // 記念日はデフォルトでアニバーサリーテーマに
+                    savedTheme = 'anniversary'; 
                     sessionStorage.setItem('anniv_shown', 'true');
                     document.getElementById('annivModal').classList.add('active');
                     setTimeout(() => {
@@ -701,21 +779,40 @@
                 els.hapticsCheck.checked = hapticsEnabled;
                 els.noRepeatCheck.checked = (localStorage.getItem('mimi_norepeat') === 'true');
                 
+                els.dualModeCheck.checked = isDualMode;
+                els.dualModeCheck.addEventListener('change', (e) => {
+                    isDualMode = e.target.checked;
+                    localStorage.setItem('mimi_dual_mode', isDualMode);
+                    updateDualModeUI();
+                });
+                
                 const res = await fetch('src/songs.json');
                 allSongs = await res.json();
                 
                 applyLang(currentLang);
                 setMode(currentMode); 
                 setSpeed(currentSpeed); 
-                renderStaticReel(); 
+                updateDualModeUI();
                 updateHistoryUI();
 
             } catch (e) {
                 console.error(e);
-                els.reel.innerHTML = '<li class="reel-item">Error Loading Data</li>';
+                els.reel1.innerHTML = '<li class="reel-item">Error Loading Data</li>';
             }
         }
         init();
+
+        function updateDualModeUI() {
+            const container = document.getElementById('mainContainer');
+            if (isDualMode) {
+                container.classList.add('dual-active');
+                document.getElementById('reelWindow2').style.display = 'block';
+            } else {
+                container.classList.remove('dual-active');
+                document.getElementById('reelWindow2').style.display = 'none';
+            }
+            renderStaticReel(); 
+        }
 
         function triggerHaptic(ms = 10) {
             if(hapticsEnabled && navigator.vibrate) navigator.vibrate(ms);
@@ -777,78 +874,110 @@
             availableSongs = availableSongs.filter(s => !disabledSongs.includes(s.url));
             let targetList = isNoRepeat ? availableSongs.filter(s => !disabledSongs.includes(s.url)) : activePool;
 
-            if(targetList.length === 0) {
-                 if(activePool.length > 0) document.getElementById('resetModal').classList.add('active');
-                 return;
+            if (isDualMode) {
+                if (targetList.length < 2 && isNoRepeat) {
+                    alert(I18N[currentLang].notEnoughSongs);
+                    return;
+                }
+                const w1Idx = Math.floor(Math.random() * targetList.length);
+                const winner1 = targetList[w1Idx];
+                
+                let listForW2 = [...targetList];
+                if (isNoRepeat) listForW2.splice(w1Idx, 1);
+                const w2Idx = Math.floor(Math.random() * listForW2.length);
+                const winner2 = listForW2[w2Idx];
+
+                if (isNoRepeat) {
+                    availableSongs = availableSongs.filter(s => s.url !== winner1.url && s.url !== winner2.url);
+                }
+                startSpin([winner1, winner2], activePool);
+            } else {
+                if(targetList.length === 0) {
+                     if(activePool.length > 0) document.getElementById('resetModal').classList.add('active');
+                     return;
+                }
+                const winnerIndex = Math.floor(Math.random() * targetList.length);
+                const winner = targetList[winnerIndex];
+                if(isNoRepeat) availableSongs = availableSongs.filter(s => s.url !== winner.url);
+
+                startSpin([winner], activePool);
             }
-
-            const winnerIndex = Math.floor(Math.random() * targetList.length);
-            const winner = targetList[winnerIndex];
-            if(isNoRepeat) availableSongs = availableSongs.filter(s => s.url !== winner.url);
-
-            startSpin(winner, activePool);
         });
 
-        function startSpin(winner, pool) {
+        function startSpin(winners, pool) {
             isSpinning = true;
             els.spinBtn.disabled = true;
             
             const itemsToScroll = Math.floor(spinConfig.duration * 15);
             const loopsNeeded = Math.ceil((itemsToScroll + 5) / pool.length); 
             const finalLoops = Math.max(2, loopsNeeded);
-            
-            const fragment = document.createDocumentFragment();
-            for(let i=0; i < finalLoops; i++) {
-                pool.forEach(song => { fragment.appendChild(createItem(song.title)); });
-            }
-            for(let i=0; i < 5; i++) {
-                if(pool[i]) fragment.appendChild(createItem(pool[i].title));
-            }
-
-            els.reel.innerHTML = '';
-            els.reel.appendChild(fragment);
-            gsap.set(els.reel, { y: 0 });
-
-            const winnerIdxInPool = pool.findIndex(s => s.url === winner.url);
             const targetLoop = finalLoops - 1; 
-            const targetTotalIndex = (targetLoop * pool.length) + winnerIdxInPool;
-            
-            const allItems = els.reel.querySelectorAll('.reel-item');
-            if(allItems[targetTotalIndex]) allItems[targetTotalIndex].id = 'winnerItem';
 
-            const targetY = 105 - (targetTotalIndex * spinConfig.itemHeight);
-            
-            let lastY = 0;
-            let distAcc = 0;
+            let completedReels = 0;
 
-            gsap.to(els.reel, {
-                y: targetY,
-                duration: spinConfig.duration,
-                ease: "power4.out",
-                onUpdate: function() {
-                    const currentY = gsap.getProperty(els.reel, "y");
-                    const delta = Math.abs(currentY - lastY);
-                    distAcc += delta;
-                    if(distAcc >= spinConfig.itemHeight) {
-                        triggerHaptic(12);
-                        distAcc %= spinConfig.itemHeight;
-                    }
-                    lastY = currentY;
-                },
-                onComplete: function() {
-                    const winItem = document.getElementById('winnerItem');
-                    if(winItem) winItem.classList.add('winner-active');
-                    triggerHaptic(50); 
-                    setTimeout(() => {
-                        if(currentMode === 'daily') {
-                            dailyCount++;
-                            els.dailyInput.value = dailyCount;
-                            localStorage.setItem('mimi_daily_count', dailyCount);
-                            els.dailyBadge.innerText = `Day ${dailyCount}`;
-                        }
-                        showResult(winner);
-                    }, 600); 
+            winners.forEach((winner, index) => {
+                const reelEl = document.getElementById(`reelList${index + 1}`);
+                const fragment = document.createDocumentFragment();
+                
+                for(let i=0; i < finalLoops; i++) {
+                    pool.forEach(song => { fragment.appendChild(createItem(song.title)); });
                 }
+                for(let i=0; i < 5; i++) {
+                    if(pool[i]) fragment.appendChild(createItem(pool[i].title));
+                }
+
+                reelEl.innerHTML = '';
+                reelEl.appendChild(fragment);
+                gsap.set(reelEl, { y: 0 });
+
+                const winnerIdxInPool = pool.findIndex(s => s.url === winner.url);
+                const targetTotalIndex = (targetLoop * pool.length) + winnerIdxInPool;
+                
+                const allItems = reelEl.querySelectorAll('.reel-item');
+                if(allItems[targetTotalIndex]) allItems[targetTotalIndex].id = `winnerItem${index + 1}`;
+
+                const targetY = 105 - (targetTotalIndex * spinConfig.itemHeight);
+                
+                let lastY = 0;
+                let distAcc = 0;
+                
+                const durationOffset = index === 1 ? 0.3 : 0;
+
+                gsap.to(reelEl, {
+                    y: targetY,
+                    duration: spinConfig.duration + durationOffset,
+                    ease: "power4.out",
+                    onUpdate: function() {
+                        if (index === 0) {
+                            const currentY = gsap.getProperty(reelEl, "y");
+                            const delta = Math.abs(currentY - lastY);
+                            distAcc += delta;
+                            if(distAcc >= spinConfig.itemHeight) {
+                                triggerHaptic(12);
+                                distAcc %= spinConfig.itemHeight;
+                            }
+                            lastY = currentY;
+                        }
+                    },
+                    onComplete: function() {
+                        const winItem = document.getElementById(`winnerItem${index + 1}`);
+                        if(winItem) winItem.classList.add('winner-active');
+                        
+                        completedReels++;
+                        if (completedReels === winners.length) {
+                            triggerHaptic(50); 
+                            setTimeout(() => {
+                                if(currentMode === 'daily') {
+                                    dailyCount++;
+                                    els.dailyInput.value = dailyCount;
+                                    localStorage.setItem('mimi_daily_count', dailyCount);
+                                    els.dailyBadge.innerText = `Day ${dailyCount}`;
+                                }
+                                showResult(winners);
+                            }, 600); 
+                        }
+                    }
+                });
             });
         }
         function createItem(text) {
@@ -902,20 +1031,63 @@
             if(currentMode === 'normal') localStorage.setItem('mimi_norepeat', e.target.checked);
         });
 
-        function showResult(song) {
-            currentWinner = song;
-            const titleEl = document.getElementById('resTitle');
-            titleEl.innerText = song.title;
-            titleEl.className = 'res-title-main';
-            if (song.title.length > 20) titleEl.classList.add('very-long');
-            else if (song.title.length > 12) titleEl.classList.add('long');
-            document.getElementById('resSinger').innerText = song.singer;
-            document.getElementById('resArtist').innerText = song.artist;
-            document.getElementById('btnYt').href = song.url;
-            addToHistory(song);
+        // * 【UI改善】サムネイルを取得して結果モーダルを組み立てる処理
+        function showResult(winners) {
+            currentWinners = winners;
+            
+            const resDataContainer = document.getElementById('resDataContainer');
+            resDataContainer.innerHTML = '';
+            
+            const modalCard = document.getElementById('resultModalCard');
+            if (winners.length > 1) {
+                resDataContainer.className = 'res-data-container is-dual';
+                modalCard.classList.add('is-dual');
+            } else {
+                resDataContainer.className = 'res-data-container';
+                modalCard.classList.remove('is-dual');
+            }
+            
+            winners.forEach((w, index) => {
+                const videoId = getYouTubeID(w.url);
+                const isVeryLong = w.title.length > 20 ? 'very-long' : (w.title.length > 12 ? 'long' : '');
+                
+                const div = document.createElement('div');
+                div.className = 'res-item';
+                
+                let trackHeader = '';
+                if (winners.length > 1) {
+                    trackHeader = `<div class="track-header">${I18N[currentLang].track} ${index + 1}</div>`;
+                }
+
+                let thumbHTML = '';
+                if (videoId) {
+                    thumbHTML = `
+                    <div class="res-thumb-wrap">
+                        <img src="https://img.youtube.com/vi/${videoId}/maxresdefault.jpg" 
+                             onerror="this.onerror=null; this.src='https://img.youtube.com/vi/${videoId}/hqdefault.jpg';" 
+                             class="res-thumb" alt="thumbnail">
+                        <a href="${w.url}" target="_blank" class="res-thumb-overlay">
+                            <span class="material-icons-round">play_arrow</span>
+                        </a>
+                    </div>`;
+                }
+
+                div.innerHTML = `
+                    ${trackHeader}
+                    ${thumbHTML}
+                    <div class="res-singer-badge">${w.singer}</div>
+                    <div class="res-title-main ${isVeryLong}">${w.title}</div>
+                    <div class="res-artist-sub">${w.artist}</div>
+                    <a href="${w.url}" target="_blank" class="action-btn btn-yt">
+                        <span style="margin-right:8px">▶</span> ${I18N[currentLang].youtube}
+                    </a>
+                `;
+                resDataContainer.appendChild(div);
+            });
+
+            addToHistory(winners);
             document.getElementById('resultModal').classList.add('active');
             
-            // テーマに合わせた紙吹雪カラー
             const currentTheme = document.documentElement.getAttribute('data-theme');
             let colors = ['#74ebd5', '#9FACE6', '#ffffff'];
             if(currentTheme === 'anniversary') colors = ['#d4af37', '#f2c94c', '#ffffff'];
@@ -933,22 +1105,32 @@
             document.getElementById('shareModal').classList.add('active');
             els.shareInput.focus();
         });
+        
         els.shareInput.addEventListener('input', updateCharCount);
         function updateCharCount() {
-            if(!currentWinner) return;
+            if(!currentWinners || currentWinners.length === 0) return;
             let header = currentMode === 'daily' ? `${dailyCount - 1}日目の曲は` : "今回の曲は";
             if(currentLang === 'en') header = currentMode === 'daily' ? `Day ${dailyCount - 1} Song:` : "Today's Song:";
-            const fixed = `${header}\n「${currentWinner.title}」 / 「${currentWinner.artist} (${currentWinner.singer})」\n\n\n\n↓「${currentWinner.title}」\n #MIMI_Roulette`;
-            const len = fixed.length + 23 + els.shareInput.value.length;
+            
+            let songsText = currentWinners.map(w => `「${w.title}」 / 「${w.artist} (${w.singer})」`).join('\n');
+            let hashTags = currentWinners.map(w => `↓「${w.title}」\n`).join('');
+            
+            const fixed = `${header}\n${songsText}\n\n\n\n${hashTags}#MIMI_Roulette`;
+            const len = fixed.length + els.shareInput.value.length;
             const remaining = 140 - len;
             els.charCount.innerText = remaining;
             els.charCount.classList.toggle('error', remaining < 0);
         }
+
         document.getElementById('btnPostX').addEventListener('click', () => {
-             if(!currentWinner) return;
+             if(!currentWinners || currentWinners.length === 0) return;
              let header = currentMode === 'daily' ? `${dailyCount - 1}日目の曲は` : "今回の曲は";
              if(currentLang === 'en') header = currentMode === 'daily' ? `Day ${dailyCount - 1} Song:` : "Today's Song:";
-             const text = `${header}\n「${currentWinner.title}」 / 「${currentWinner.artist} (${currentWinner.singer})」\n\n${els.shareInput.value}\n\n↓「${currentWinner.title}」\n${currentWinner.url} #MIMI_Roulette`;
+             
+             let songsText = currentWinners.map(w => `「${w.title}」 / 「${w.artist} (${w.singer})」`).join('\n');
+             let hashTagsAndUrls = currentWinners.map(w => `↓「${w.title}」\n${w.url}`).join('\n');
+
+             const text = `${header}\n${songsText}\n\n${els.shareInput.value}\n\n${hashTagsAndUrls}\n#MIMI_Roulette`;
              window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
              document.getElementById('shareModal').classList.remove('active');
         });
@@ -978,11 +1160,13 @@
             document.getElementById('statsModal').classList.add('active');
         };
 
-        function addToHistory(song) {
+        function addToHistory(winners) {
             const date = new Date().toLocaleDateString();
-            const newItem = { title: song.title, date: date };
-            history.unshift(newItem);
-            if(history.length > 200) history.pop();
+            winners.forEach(w => {
+                const newItem = { title: w.title, date: date };
+                history.unshift(newItem); 
+            });
+            if(history.length > 200) history.splice(200);
             localStorage.setItem('mimi_history', JSON.stringify(history));
             updateHistoryUI(); 
         }
@@ -1029,7 +1213,7 @@
         };
         
         window.exportData = () => {
-            const data = { history, disabledSongs, dailyCount, hapticsEnabled, currentSpeed };
+            const data = { history, disabledSongs, dailyCount, hapticsEnabled, currentSpeed, isDualMode };
             const blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"});
             const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `mimi_backup.json`; document.body.appendChild(a); a.click(); a.remove();
         };
@@ -1044,13 +1228,13 @@
                     if(data.dailyCount) { dailyCount = data.dailyCount; localStorage.setItem('mimi_daily_count', dailyCount); }
                     if(data.hapticsEnabled !== undefined) { hapticsEnabled = data.hapticsEnabled; localStorage.setItem('mimi_haptics', hapticsEnabled); }
                     if(data.currentSpeed) { currentSpeed = data.currentSpeed; localStorage.setItem('mimi_speed', currentSpeed); }
+                    if(data.isDualMode !== undefined) { isDualMode = data.isDualMode; localStorage.setItem('mimi_dual_mode', isDualMode); }
                     alert("Done! Reloading..."); location.reload();
                 } catch(err) { alert("Error"); }
             };
             reader.readAsText(file);
         };
 
-        // 3つのテーマをトグルできるように変更
         function applyTheme(theme) {
             const html = document.documentElement;
             const metaTheme = document.getElementById('metaThemeColor');
@@ -1102,12 +1286,17 @@
             document.getElementById('resetModal').classList.remove('active');
             confetti({ particleCount: 50, colors:['#74ebd5'] });
         });
+        
         function renderStaticReel() {
-            els.reel.innerHTML = '';
-            if(allSongs.length === 0) return;
-            allSongs.forEach(s => els.reel.appendChild(createItem(s.title)));
-            allSongs.forEach(s => els.reel.appendChild(createItem(s.title))); 
-            gsap.set(els.reel, { y: 105 }); 
+            const reelsToRender = isDualMode ? [els.reel1, els.reel2] : [els.reel1];
+            
+            reelsToRender.forEach(reel => {
+                reel.innerHTML = '';
+                if(allSongs.length === 0) return;
+                allSongs.forEach(s => reel.appendChild(createItem(s.title)));
+                allSongs.forEach(s => reel.appendChild(createItem(s.title))); 
+                gsap.set(reel, { y: 105 }); 
+            });
         }
     </script>
 </body>
